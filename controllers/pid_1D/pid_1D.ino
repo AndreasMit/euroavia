@@ -1,28 +1,12 @@
-/* 
-    TODO:
-        - Check if it works
-        - throttle value? Random?
-        - cut final output before 2000, for example at 1600.
-          Motors are powerfull and I wouldn't want to be near them running full speed.
-          After all, we dont need so much power.
-        - I'm not sure for the "I" part. Integrate numericaly in a better way?
-        - [throttle + PID] to right or [throttle - PID]?
-        - If it works, find a way to control desired_angle with a controller
-        - Measured angle issues? Last time i tried, i had some problems with the sensor readings
-          For eg, when forcing the system to go to 0 angle by hand, it took some time for the sensor 
-          to recognise the change and the value to rest there.
-
-*/
-
 #include <Servo.h>
 #include <MPU6050_tockn.h>
 #include <Wire.h>
 
 // --- Controller Constants ----
 
-#define K_P 2;   // P constant
-#define K_D 1.5; // D constant
-#define K_I 1.2; // I constant
+#define K_P 2.0 // P constant
+#define K_D 1.5 // D constant
+#define K_I 1.2 // I constant
 
 // -----------------------------
 
@@ -37,6 +21,7 @@ float error; float prev_error = 0; float error_sum = 0; //cumulative error for t
 float c_time; //current time
 float prev_time, elapsed_time;
 float pid_p, pid_i, pid_d, PID;
+float motor_L_speed, motor_R_speed;
 
 //Motor pin numbers
 int motor_left_esc = 9; 
@@ -71,6 +56,7 @@ void setup(){
 void loop(){
 
     //Keeping track of time
+    prev_time = c_time;
     c_time = millis();
     elapsed_time = (c_time - prev_time) / 1000; //time passed in [sec]
 
@@ -80,7 +66,7 @@ void loop(){
 
     //Calculating error
     error = desired_angle - c_angle; //current error
-    error_sum = error_sum + error * elapsed_time;
+    error_sum = error_sum + error * elapsed_time; //Integration method: Midpoint rule
 
     // ----- P I D CONTROLLER --------
     
@@ -97,11 +83,11 @@ void loop(){
         stop (1000) is 1000 and the max we could substract from top speed (2000)
         is -1000. So, we expect the pid result values to vary from -1000 to 1000.
     */
-    PID = cutBound(PID, -1000, 1000);
+    PID = constrain(PID, -1000, 1000);
 
     //Writing final calculated motor speed
-    motor_L_speed = cutBound(throttle + PID, 1000, 2000);
-    motor_R_speed = cutBound(throttle - PID, 1000, 2000);
+    motor_L_speed = constrain(throttle + PID, 1000, 2000); //Clamping saturation limit
+    motor_R_speed = constrain(throttle - PID, 1000, 2000);
     motor_L.writeMicroseconds(motor_L_speed); 
     motor_R.writeMicroseconds(motor_R_speed);
 
@@ -113,32 +99,9 @@ void loop(){
     Serial.print("Speed Right: "); Serial.println(motor_R_speed); 
     Serial.println();
 
-    //Keeping current error and time in memory
+    //Keeping current error in memory
     prev_error = error;
-    prev_time = c_time;
 
     //Final delay before next iteration
     delay(400);
-}
-
-
-
-// --------- ASSISTING FUNCTIONS ------------
-
-/*
-    Contains a certain number between 2 boundaries by cutting.
-    Eg:
-        1200 in [1000, 2000] => 1200
-        900 in [1000, 2000] => 1000
-        2500 in [1000, 2000] => 2000
-    Contains "value" in [down, up]
-*/
-float cutBound(float value, float down, float up){
-    if (value > up){
-        return up;
-    } else if (value < down){
-        return down;
-    } else {
-        return value;
-    }
 }

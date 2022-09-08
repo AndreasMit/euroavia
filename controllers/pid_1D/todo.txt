@@ -1,0 +1,25 @@
+/* 
+    TODO:
+        - Check if it works
+        - throttle value? Random?
+        - Clamping saturation limit values:
+          cut final output before 2000, for example at 1600.
+          Motors are powerfull and I wouldn't want to be near them running full speed.
+          After all, we dont need so much power.
+        - [throttle + PID] to right or [throttle - PID]?
+        - If it works, find a way to control desired_angle with a controller
+        - Measured angle issues? Last time i tried, i had some problems with the sensor readings
+          For eg, when forcing the system to go to 0 angle by hand, it took some time for the sensor 
+          to recognise the change and the value to rest there.
+        - Plot measure angle
+
+        - Integrate numerically in a better way?
+        - Differentiate numerically in a better way?
+        - Introduce an anti-windup method for the integrator
+        - 1st order low pass filter to the derivative?
+
+        - Try to derive a "Transfer Function" to work on the problem in a 
+          more mathematical way with other control theory methods
+              First principles?
+
+*/
