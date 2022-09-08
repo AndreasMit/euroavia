@@ -5,9 +5,12 @@
         - cut final output before 2000, for example at 1600.
           Motors are powerfull and I wouldn't want to be near them running full speed.
           After all, we dont need so much power.
-        - Implement "D" from pid
-        - Implement "I" from pid 
+        - I'm not sure for the "I" part. Integrate numericaly in a better way?
         - [throttle + PID] to right or [throttle - PID]?
+        - If it works, find a way to control desired_angle with a controller
+        - Measured angle issues? Last time i tried, i had some problems with the sensor readings
+          For eg, when forcing the system to go to 0 angle by hand, it took some time for the sensor 
+          to recognise the change and the value to rest there.
 
 */
 
@@ -17,7 +20,9 @@
 
 // --- Controller Constants ----
 
-#define P_CONST 2;
+#define K_P 2;   // P constant
+#define K_D 1.5; // D constant
+#define K_I 1.2; // I constant
 
 // -----------------------------
 
@@ -28,6 +33,10 @@ Servo motor_R;
 //Variables
 float desired_angle = 0;
 float throttle = 1200; //initial speed of the motors, used in the end - RANDOM
+float error; float prev_error = 0; float error_sum = 0; //cumulative error for the Integral part
+float c_time; //current time
+float prev_time, elapsed_time;
+float pid_p, pid_i, pid_d, PID;
 
 //Motor pin numbers
 int motor_left_esc = 9; 
@@ -44,6 +53,9 @@ void setup(){
     motor_L.attach(motor_left_esc);
     motor_R.attach(motor_right_esc);
 
+    //Start counting time in milliseconds
+    c_time = millis();
+
     //MOTOR ARM
     //Sending initial stop signal to the motors
     delay(1000);
@@ -58,19 +70,25 @@ void setup(){
 
 void loop(){
 
+    //Keeping track of time
+    c_time = millis();
+    elapsed_time = (c_time - prev_time) / 1000; //time passed in [sec]
+
     //Reading sensor angle
     mpu6050.update();
     float c_angle = mpu6050.getAngleX(); //current angle
 
-    float error = desired_angle - c_angle;
+    //Calculating error
+    error = desired_angle - c_angle; //current error
+    error_sum = error_sum + error * elapsed_time;
 
     // ----- P I D CONTROLLER --------
     
-    float pid_p = P_CONST * error;
-    float pid_d = 0;
-    float pid_i = 0;
+    pid_p = K_P * error;
+    pid_d = K_D * (error - prev_error) / elapsed_time;
+    pid_i = K_I * error_sum;
 
-    float PID = pid_p + pid_i + pid_d;
+    PID = pid_p + pid_i + pid_d;
 
     // -----------------------------
 
@@ -95,7 +113,11 @@ void loop(){
     Serial.print("Speed Right: "); Serial.println(motor_R_speed); 
     Serial.println();
 
+    //Keeping current error and time in memory
+    prev_error = error;
+    prev_time = c_time;
 
+    //Final delay before next iteration
     delay(400);
 }
 
