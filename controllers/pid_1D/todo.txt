@@ -4,6 +4,9 @@
         - [throttle + PID] to right or [throttle - PID]?
         - If it works, find a way to control desired_angle with a controller
         - Plot measure angle (Serial Plotter) ?
+        - Reintroduce the mpu6050 library. Its hard to build it manually, especially the filters etc
+        - We also need an IMU with a magnetometer. It counteracts the gyro angle shift
+        - (!) we better use angle X and not Y. For some reason there is less shift there
 
         - Integrate numerically in a better way?
         - Differentiate numerically in a better way?

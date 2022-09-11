@@ -1,5 +1,8 @@
 #include <Servo.h>
+#include <MPU6050_tockn.h>
 #include <Wire.h>
+
+MPU6050 mpu6050(Wire, 0.02, 0.98); // Complementary filter coeffs [0.02 ACC, 0.98 GYRO]
 
 // --- Controller Constants ----
 
@@ -11,7 +14,10 @@
 
 #define THROTTLE_BASE_VAL 1400.0
 
-MPU6050 mpu6050(Wire);
+//Motor pin numbers
+int motor_left_esc = 9; 
+int motor_right_esc = 3;
+
 Servo motor_L; 
 Servo motor_R;
 
@@ -31,9 +37,6 @@ long acc_x, acc_y, acc_z;
 float c_angle; //current angle (most recent measurement)
 float angle_x, angle_y;
 
-//Motor pin numbers
-int motor_left_esc = 9; 
-int motor_right_esc = 3;
 
 void setup(){
 
@@ -48,7 +51,15 @@ void setup(){
     //Initialization
     Serial.begin(9600);
     Wire.begin();
-    mpu6050_setup();
+    mpu6050.begin();
+
+    //Configuring DLPF (Digital Low Pass Filter)
+    Wire.beginTransmission(0b1101000); //Choosing 4th filter available (Sec. 4.6 Register 26)
+    Wire.write(0x1A);
+    Wire.write(0b00000100);
+    Wire.endTransmission(); delay(100);
+
+    mpu6050.calcGyroOffsets(true);
 
     //Start counting time in milliseconds
     c_time = millis();
@@ -67,9 +78,8 @@ void loop(){
     elapsed_time = (c_time - prev_time) / 1000; //time passed in [sec]
 
     //Reading sensor angle
-    recordAccelRegisters();
-    calc_angles();
-    c_angle = angle_y; //current angle
+    mpu6050.update();
+    c_angle = mpu6050.getAngleX(); //current angle
 
     //Calculating error
     error = desired_angle - c_angle; //current error
@@ -111,56 +121,4 @@ void loop(){
 
     //Final delay before next iteration
     delay(85);
-}
-
-
-
-
-
-
-//-------- ASSISTING FUNCTIONS ---------
-
-// MPU6050 
-
-void mpu6050_setup(){
-  //Setting sensor into reading mode (awakening from sleep)
-  Wire.beginTransmission(0b1101000); //This is the I2C address of the MPU (b1101000/b1101001 for AC0 low/high datasheet sec. 9.2)
-  Wire.write(0x6B); //Accessing the register 6B - Power Management (Sec. 4.28)
-  Wire.write(0b00000000); //Setting SLEEP register to 0. (Required; see Note on p. 9)
-  Wire.endTransmission();  
-  
-  //Setting Accelerometer Mode
-  Wire.beginTransmission(0b1101000); //I2C address of the MPU
-  Wire.write(0x1C); //Accessing the register 1C - Acccelerometer Configuration (Sec. 4.5) 
-  Wire.write(0b00000000); //Setting the accel to +/- 2g
-  Wire.endTransmission(); 
-
-  //Configuring DLPF (Digital Low Pass Filter)
-  Wire.beginTransmission(0b1101000); //Choosing 4th filter available (Sec. 4.6 Register 26)
-  Wire.write(0x1A);
-  Wire.write(0b00000100);
-  Wire.endTransmission();
-
-  delay(200);
-}
-
-void recordAccelRegisters() {
-
-  Wire.beginTransmission(0b1101000); //I2C address of the MPU
-  Wire.write(0x3B); //Starting register for Accel Readings
-  Wire.endTransmission();
-  Wire.requestFrom(0b1101000,6); //Request Accel Registers (3B - 40)
-  while(Wire.available() < 6);
-  acc_x = Wire.read()<<8|Wire.read(); //Store first two bytes into acc_x
-  acc_y = Wire.read()<<8|Wire.read(); //Store middle two bytes into acc_y
-  acc_z = Wire.read()<<8|Wire.read(); //Store last two bytes into acc_z
-
-}
-
-void calc_angles(){
-
-  //Converting ACC readings into angle measurements
-  angle_x = atan2(acc_y, acc_z) * 180 / PI;
-  angle_y = atan2(acc_x, acc_z) * 180 / PI;
-
 }
