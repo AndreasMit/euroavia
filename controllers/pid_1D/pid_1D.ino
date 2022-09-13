@@ -6,13 +6,15 @@ MPU6050 mpu6050(Wire, 0.02, 0.98); // Complementary filter coeffs [0.02 ACC, 0.9
 
 // --- Controller Constants ----
 
-#define K_P 10 // P constant
-#define K_D 0 // D constant
-#define K_I 0 // I constant
+#define K_P 2.3 // P constant
+#define K_D 1.2 // D constant
+#define K_I 0.4 // I constant
 
 // -----------------------------
 
 #define THROTTLE_BASE_VAL 1400.0
+#define MIN_MOTOR_VAL 1000
+#define MAX_MOTOR_VAL 1700 //Motor clamping saturation limit
 
 //Motor pin numbers
 int motor_left_esc = 9; 
@@ -42,11 +44,14 @@ void setup(){
 
     //MOTOR ARM
     //Sending initial stop signal to the motors
+    // digitalWrite(motor_left_esc, 0); //We need to have them low before attaching, otherwise 
+    // digitalWrite(motor_right_esc, 0); //when arduino powers on they go crazy and then turn off (Safety Measure!!)
+    // delay(100);
     motor_L.attach(motor_left_esc);
     motor_R.attach(motor_right_esc);
-    delay(1000);
     motor_L.writeMicroseconds(1000);
     motor_R.writeMicroseconds(1000);
+    delay(1000);
 
     //Initialization
     Serial.begin(9600);
@@ -80,6 +85,7 @@ void loop(){
     //Reading sensor angle
     mpu6050.update();
     c_angle = mpu6050.getAngleX(); //current angle
+    // c_angle = getAngleFiltered('X');
 
     //Calculating error
     error = desired_angle - c_angle; //current error
@@ -103,8 +109,8 @@ void loop(){
     PID = constrain(PID, -1000, 1000);
 
     //Writing final calculated motor speed
-    motor_L_speed = constrain(throttle + PID, 1000, 1700); //Clamping saturation limit
-    motor_R_speed = constrain(throttle - PID, 1000, 1700);
+    motor_L_speed = constrain(throttle + PID, MIN_MOTOR_VAL, MAX_MOTOR_VAL); //Clamping saturation limit
+    motor_R_speed = constrain(throttle - PID, MIN_MOTOR_VAL, MAX_MOTOR_VAL);
     motor_L.writeMicroseconds(motor_L_speed); 
     motor_R.writeMicroseconds(motor_R_speed);
 
@@ -114,6 +120,7 @@ void loop(){
     Serial.print("  Error: "); Serial.print(error);
     Serial.print("  Speed Left: "); Serial.print(motor_L_speed);
     Serial.print("  Speed Right: "); Serial.print(motor_R_speed); 
+    Serial.print("  PID: "); Serial.print(PID); 
     Serial.println();
 
     //Keeping current error in memory
@@ -121,4 +128,48 @@ void loop(){
 
     //Final delay before next iteration
     delay(85);
+}
+
+
+//---------- ASSISTING FUNCTIONS -------------
+
+/*
+    MOVING AVERAGE FILTER
+    Just measures some angles and returns the average.
+    For eg, if count = 3:
+
+                 angle[t]   angle[t+1]   angle[t+2]
+        result = -----------------------------------
+                                 3
+
+    It can be done with as many angle measurements as we want.
+    There is a delay of 5 mSec in between (randomly choosen small value)
+    MPU Refresh Rate (not sure):
+        Gyro: 8kHz (0.125 ms)
+        Acc: 1kHz (1 ms)
+
+*/
+float getAngleFiltered(char direction){
+
+    int count = 3;
+    float result_angle = 0;
+
+    for (int i = 0; i < count; ++i)
+    {
+        mpu6050.update();
+        if (direction == 'X'){
+            result_angle += mpu6050.getAngleX();
+        } else if (direction == 'Y'){
+            result_angle += mpu6050.getAngleY();
+        } else {
+            Serial.println("Error in the direction specified (getAngleFiltered)\n");
+            return 0.0;
+        }
+        delay(5);
+    }
+
+    result_angle /= count;
+
+    return result_angle;
+
 }
