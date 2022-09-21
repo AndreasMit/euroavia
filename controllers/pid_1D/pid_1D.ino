@@ -6,15 +6,15 @@ MPU6050 mpu6050(Wire, 0.02, 0.98); // Complementary filter coeffs [0.02 ACC, 0.9
 
 // --- Controller Constants ----
 
-#define K_P 2.3 // P constant
-#define K_D 1.2 // D constant
-#define K_I 0.4 // I constant
+#define K_P 1.5 // P constant //2.3
+#define K_D 1   // D constant //1.2
+#define K_I 0.4 // I constant //0.4
 
 // -----------------------------
 
-#define THROTTLE_BASE_VAL 1400.0
+#define THROTTLE_BASE_VAL 1250.0
 #define MIN_MOTOR_VAL 1000
-#define MAX_MOTOR_VAL 1700 //Motor clamping saturation limit
+#define MAX_MOTOR_VAL 1500 //Motor clamping saturation limit
 
 //Motor pin numbers
 int motor_left_esc = 9; 
@@ -37,7 +37,6 @@ float motor_L_speed, motor_R_speed;
 
 long acc_x, acc_y, acc_z;
 float c_angle; //current angle (most recent measurement)
-float angle_x, angle_y;
 
 
 void setup(){
@@ -84,8 +83,8 @@ void loop(){
 
     //Reading sensor angle
     mpu6050.update();
-    c_angle = mpu6050.getAngleX(); //current angle
-    // c_angle = getAngleFiltered('X');
+    // c_angle = mpu6050.getAngleY(); //current angle
+    c_angle = getAngleFiltered('Y');
 
     //Calculating error
     error = desired_angle - c_angle; //current error
@@ -121,13 +120,14 @@ void loop(){
     Serial.print("  Speed Left: "); Serial.print(motor_L_speed);
     Serial.print("  Speed Right: "); Serial.print(motor_R_speed); 
     Serial.print("  PID: "); Serial.print(PID); 
+    // Serial.print(c_angle);
     Serial.println();
 
     //Keeping current error in memory
     prev_error = error;
 
     //Final delay before next iteration
-    delay(85);
+    delay(10);
 }
 
 
@@ -138,15 +138,12 @@ void loop(){
     Just measures some angles and returns the average.
     For eg, if count = 3:
 
-                 angle[t]   angle[t+1]   angle[t+2]
-        result = -----------------------------------
+                 angle[t] +  angle[t+1]  +  angle[t+2]
+        result = -------------------------------------
                                  3
 
     It can be done with as many angle measurements as we want.
     There is a delay of 5 mSec in between (randomly choosen small value)
-    MPU Refresh Rate (not sure):
-        Gyro: 8kHz (0.125 ms)
-        Acc: 1kHz (1 ms)
 
 */
 float getAngleFiltered(char direction){
@@ -165,7 +162,7 @@ float getAngleFiltered(char direction){
             Serial.println("Error in the direction specified (getAngleFiltered)\n");
             return 0.0;
         }
-        delay(5);
+        delay(10);
     }
 
     result_angle /= count;

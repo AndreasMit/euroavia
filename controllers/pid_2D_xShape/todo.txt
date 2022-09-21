@@ -1,0 +1,7 @@
+/*
+	TODO:
+		- MPU9250 instead of MPU6050
+		- Control angles with a transmitter (nrf24)
+		- Using gyro data at K_D instead of differentiating
+
+*/

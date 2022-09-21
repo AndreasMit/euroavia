@@ -1,0 +1,104 @@
+{
+    "frameEnd": "",
+    "frameStart": "",
+    "groups": [
+        {
+            "datasets": [
+                {
+                    "alarm": 90,
+                    "fft": false,
+                    "fftSamples": 1024,
+                    "graph": true,
+                    "led": false,
+                    "log": false,
+                    "max": 90,
+                    "min": -90,
+                    "title": "Angle X",
+                    "units": "deg",
+                    "value": "%2",
+                    "widget": ""
+                },
+                {
+                    "alarm": 0,
+                    "fft": false,
+                    "fftSamples": 1024,
+                    "graph": true,
+                    "led": false,
+                    "log": false,
+                    "max": 90,
+                    "min": -90,
+                    "title": "Angle Y",
+                    "units": "deg",
+                    "value": "%3",
+                    "widget": ""
+                }
+            ],
+            "title": "Angles",
+            "widget": "multiplot"
+        },
+        {
+            "datasets": [
+                {
+                    "alarm": 1500,
+                    "fft": false,
+                    "fftSamples": 1024,
+                    "graph": false,
+                    "led": false,
+                    "log": false,
+                    "max": 1500,
+                    "min": 1000,
+                    "title": "Motor A Speed",
+                    "units": "",
+                    "value": "%4",
+                    "widget": "gauge"
+                },
+                {
+                    "alarm": 1500,
+                    "fft": false,
+                    "fftSamples": 1024,
+                    "graph": false,
+                    "led": false,
+                    "log": false,
+                    "max": 1500,
+                    "min": 1000,
+                    "title": "Motor B Speed",
+                    "units": "",
+                    "value": "%5",
+                    "widget": "gauge"
+                },
+                {
+                    "alarm": 1500,
+                    "fft": false,
+                    "fftSamples": 1024,
+                    "graph": false,
+                    "led": false,
+                    "log": false,
+                    "max": 1500,
+                    "min": 1000,
+                    "title": "Motor C Speed",
+                    "units": "",
+                    "value": "%6",
+                    "widget": "gauge"
+                },
+                {
+                    "alarm": 1500,
+                    "fft": false,
+                    "fftSamples": 1024,
+                    "graph": false,
+                    "led": false,
+                    "log": false,
+                    "max": 1500,
+                    "min": 1000,
+                    "title": "Motor D Speed",
+                    "units": "",
+                    "value": "%7",
+                    "widget": "gauge"
+                }
+            ],
+            "title": "Motors",
+            "widget": ""
+        }
+    ],
+    "separator": "",
+    "title": "PID_2D_xShape Quadcopter"
+}

@@ -1,22 +1,20 @@
 /* 
     TODO:
-        - Check if it works
-        - [throttle + PID] to right or [throttle - PID]?
         - If it works, find a way to control desired_angle with a controller
         - Plot measure angle (Serial Plotter) ?
-        - We also need an IMU with a magnetometer. It counteracts the gyro angle shift
         - (!) we better use angle X and not Y. For some reason there is less shift there
+        - Using gyro data at K_D instead of differentiating
         - Make arduino loop faster, take more measurements and average them out
           They say that a nice loop frequency is 1000Hz [MPU -  GYRO:8kHz ACC:1kHz]
-        - Moving Average Filter
 
-        - Integrate numerically in a better way?
-        - Differentiate numerically in a better way?
+          Sensor Sample Rate:
+              Sample Rate = Gyroscope Output Rate / (1 + SMPLRT_DIV)
+              Gyroscope Output Rate : 8kHz when DLPF is disabled or 1kHz when DLPF is enabled
+              SMPLRT_DIV: value stored in register 25 (see register map)
+
+        - MPU 9250?
+
         - Introduce an anti-windup method for the integrator
-
-        - Try to derive a "Transfer Function" to work on the problem in a 
-          more mathematical way with other control theory methods
-              First principles?
 
         - Maybe try to use arduino PID library instead of making our own.
           It'll be easier in the future where we will need more pids running at the same time
