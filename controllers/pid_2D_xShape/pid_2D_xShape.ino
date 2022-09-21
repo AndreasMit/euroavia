@@ -9,13 +9,13 @@ MPU6050 mpu6050(Wire, 0.02, 0.98); // Complementary filter coeffs [0.02 ACC, 0.9
 // X coordinate
 
 #define K_P_x 2 // P constant 
-#define K_D_x 0   // D constant 
+#define K_D_x 0 // D constant 
 #define K_I_x 0 // I constant 
 
 // Y coordinate
 
 #define K_P_y 2 // P constant 
-#define K_D_y 0   // D constant 
+#define K_D_y 0 // D constant 
 #define K_I_y 0 // I constant 
 
 // -----------------------------
@@ -41,7 +41,10 @@ float desired_angle_y = 0.0;
 
 float error_x, error_y; 
 float prev_error_x = 0; float error_sum_x = 0; //cumulative error for the Integral part
-float prev_error_y = 0; float error_sum_y = 0; //cumulative error for the Integral part
+float prev_error_y = 0; float error_sum_y = 0; 
+
+float flag_x = 1.0; //Integrators flag. Can be either 1 or 0. If 0, the "I" part of pids turn off
+float flag_y = 1.0;
 
 float c_time; //current time
 float prev_time, elapsed_time;
@@ -112,14 +115,14 @@ void loop(){
     // X direction
     pid_p_x = K_P_x * error_x;
     pid_d_x = K_D_x * (error_x - prev_error_x) / elapsed_time;
-    pid_i_x = K_I_x * error_sum_x;
+    pid_i_x = K_I_x * error_sum_x * flag_x;
 
     PID_x = pid_p_x + pid_i_x + pid_d_x;
 
     // Y direction
     pid_p_y = K_P_y * error_y;
     pid_d_y = K_D_y * (error_y - prev_error_y) / elapsed_time;
-    pid_i_y = K_I_y * error_sum_y;
+    pid_i_y = K_I_y * error_sum_y * flag_y;
 
     PID_y = pid_p_y + pid_i_y + pid_d_y;
 
@@ -143,6 +146,9 @@ void loop(){
     motor_b.writeMicroseconds(motor_b_speed);
     motor_c.writeMicroseconds(motor_c_speed);
     motor_d.writeMicroseconds(motor_d_speed);
+
+    //Anti-Windup Method
+    integrators_anti_windup();
 
     //Serial Monitor Data Output
     serialPrintData();
@@ -217,4 +223,32 @@ void serialPrintData(){
     Serial.print(",");
     Serial.print(PID_y); 
     Serial.println("*/");
+}
+
+void integrators_anti_windup(){
+
+    /* Check whether contrain clamped the output or not
+       not constrained -> bool = 0
+       constrained     -> bool = 1 
+    */
+    bool out_1 = 
+        (motor_a_speed != THROTTLE_BASE_VAL + PID_x - PID_y) ||
+        (motor_b_speed != THROTTLE_BASE_VAL + PID_x + PID_y) ||
+        (motor_c_speed != THROTTLE_BASE_VAL - PID_x - PID_y) ||
+        (motor_d_speed != THROTTLE_BASE_VAL - PID_x + PID_y) ;  
+
+    
+    /* Check if the error and the pid output have the same sign
+       If yes, that means that the integrator is adding to the output
+       wich makes our situation worse
+       same sign      -> bool = 1
+       different sign -> bool = 0
+    */
+    bool out_2_x = (PID_x * error_x) >= 0 ;
+    bool out_2_y = (PID_y * error_y) >= 0 ;
+
+    // If we're getting worse, turn off the "I" part from the pid
+    flag_x = (out_1 && out_2_x)?0:1;
+    flag_y = (out_1 && out_2_y)?0:1;
+
 }
