@@ -1,8 +1,18 @@
 #include <Servo.h>
 #include <MPU6050_tockn.h>
 #include <Wire.h>
+#include <SPI.h>
+#include <nRF24L01.h>
+#include <RF24.h>
 
 MPU6050 mpu6050(Wire, 0.02, 0.98); // Complementary filter coeffs [0.02 ACC, 0.98 GYRO]
+
+/*  Address through which two modules communicate.
+    The pipe address does not have to be “00001”, 
+    it can be any 5-character string such as “alex0” 
+    as long as the transmitter and receiver both use the same address.
+*/
+const byte address[6] = "00001"; 
 
 // --- Controller Constants ----
 
@@ -35,6 +45,20 @@ Servo motor_b;
 Servo motor_c;
 Servo motor_d;
 
+RF24 radio(6, 8); // CE , CSN pins
+
+// The sizeof this struct should not exceed 32 bytes
+// This gives us up to 32 8 bits channels
+struct MyData {
+  byte throttle;
+  byte yaw;
+  byte pitch;
+  byte roll;
+  // byte AUX1;
+  // byte AUX2;
+};
+MyData data;
+
 //Variables
 float desired_angle_x = 0.0;
 float desired_angle_y = 0.0;
@@ -48,6 +72,7 @@ float flag_y = 1.0;
 
 float c_time; //current time
 float prev_time, elapsed_time;
+unsigned long lastRecvTime = 0; //last time we received commands from transmitter
 
 float pid_p_x, pid_i_x, pid_d_x, PID_x;
 float pid_p_y, pid_i_y, pid_d_y, PID_y;
@@ -71,13 +96,22 @@ void setup(){
     motor_b.writeMicroseconds(1000);
     motor_c.writeMicroseconds(1000);
     motor_d.writeMicroseconds(1000);
-    delay(1000);
+    delay(500);
     
 
     //Initialization
+    //Serial
     Serial.begin(9600);
+    //I2C for mpu6050
     Wire.begin();
     mpu6050.begin();
+    //Radio for nrf24
+    radio.begin();
+    radio.setAutoAck(false);
+    radio.setDataRate(RF24_250KBPS); // Both endpoints must have this set the same
+    radio.openReadingPipe(1, address); //set receiving address
+    radio.startListening(); //Set module as receiver
+    resetRFData();
 
     //Configuring DLPF (Digital Low Pass Filter)
     Wire.beginTransmission(0b1101000); //Choosing 4th filter available (Sec. 4.6 Register 26)
@@ -103,6 +137,13 @@ void loop(){
     //Reading sensor angle
     mpu6050.update();
     getAnglesFiltered(&c_angle_x, &c_angle_y);
+    
+    //Receiving data from transmitter
+    recvData();
+    
+    //Calculating angles from data received
+    desired_angle_x = map(data.pitch, 0, 255, -45, 45); //Angle mapping values can be changed
+    desired_angle_y = map(data.roll, 0, 255, -45, 45);
 
     //Calculating error
     error_x = desired_angle_x - c_angle_x; //current error
@@ -221,7 +262,7 @@ void serialPrintData(){
     Serial.print(",");
     Serial.print(PID_x); 
     Serial.print(",");
-    Serial.print(PID_y); 
+    Serial.print(PID_y);
     Serial.println("*/");
 }
 
@@ -251,4 +292,32 @@ void integrators_anti_windup(){
     flag_x = (out_1 && out_2_x)?0:1;
     flag_y = (out_1 && out_2_y)?0:1;
 
+}
+
+ 
+/* "Safe" values to use when no radio input is detected.
+   Throttle is 0 in order to stop the motors
+   127 is the middle value (0 - 255)
+*/
+void resetRFData() {
+    data.throttle = 0;
+    data.yaw = 127;
+    data.pitch = 127;
+    data.roll = 127;
+    // data.AUX1 = 0;
+    // data.AUX2 = 0;
+}
+
+//If there are available data received then read them
+void recvData(){
+    if ( radio.available() ){
+        radio.read(&data, sizeof(MyData));
+        lastRecvTime = millis();
+    } 
+    //Connection Lost?
+    else if (millis() - lastRecvTime > 1000){ 
+        //If no commands received for over 1 sec
+        //Reset data to make drone hover in the air
+        resetRFData();
+    }
 }
