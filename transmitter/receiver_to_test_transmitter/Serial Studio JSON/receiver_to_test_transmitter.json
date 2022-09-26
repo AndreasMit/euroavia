@@ -1,0 +1,146 @@
+{
+    "frameEnd": "",
+    "frameStart": "",
+    "groups": [
+        {
+            "datasets": [
+                {
+                    "alarm": 0,
+                    "fft": false,
+                    "fftSamples": 1024,
+                    "graph": false,
+                    "led": false,
+                    "log": false,
+                    "max": 0,
+                    "min": 0,
+                    "title": "sTime",
+                    "units": "",
+                    "value": "%1",
+                    "widget": ""
+                },
+                {
+                    "alarm": 0,
+                    "fft": false,
+                    "fftSamples": 1024,
+                    "graph": false,
+                    "led": true,
+                    "log": false,
+                    "max": 0,
+                    "min": 0,
+                    "title": "Received?",
+                    "units": "",
+                    "value": "%2",
+                    "widget": ""
+                },
+                {
+                    "alarm": 0,
+                    "fft": false,
+                    "fftSamples": 1024,
+                    "graph": false,
+                    "led": false,
+                    "log": false,
+                    "max": 0,
+                    "min": 0,
+                    "title": "Loop Freq",
+                    "units": "",
+                    "value": "%9",
+                    "widget": ""
+                }
+            ],
+            "title": "Time",
+            "widget": ""
+        },
+        {
+            "datasets": [
+                {
+                    "alarm": 255,
+                    "fft": false,
+                    "fftSamples": 1024,
+                    "graph": false,
+                    "led": false,
+                    "log": false,
+                    "max": 255,
+                    "min": 0,
+                    "title": "data.throttle",
+                    "units": "",
+                    "value": "%3",
+                    "widget": "bar"
+                },
+                {
+                    "alarm": 255,
+                    "fft": false,
+                    "fftSamples": 1024,
+                    "graph": false,
+                    "led": false,
+                    "log": false,
+                    "max": 255,
+                    "min": 0,
+                    "title": "data.roll",
+                    "units": "",
+                    "value": "%4",
+                    "widget": "bar"
+                },
+                {
+                    "alarm": 255,
+                    "fft": false,
+                    "fftSamples": 1024,
+                    "graph": false,
+                    "led": false,
+                    "log": false,
+                    "max": 255,
+                    "min": 0,
+                    "title": "data.pitch",
+                    "units": "",
+                    "value": "%5",
+                    "widget": "bar"
+                },
+                {
+                    "alarm": 255,
+                    "fft": false,
+                    "fftSamples": 1024,
+                    "graph": false,
+                    "led": false,
+                    "log": false,
+                    "max": 255,
+                    "min": 0,
+                    "title": "data.yaw",
+                    "units": "",
+                    "value": "%6",
+                    "widget": "bar"
+                },
+                {
+                    "alarm": 0,
+                    "fft": false,
+                    "fftSamples": 1024,
+                    "graph": false,
+                    "led": true,
+                    "log": false,
+                    "max": 0,
+                    "min": 0,
+                    "title": "data.AUX1",
+                    "units": "",
+                    "value": "%7",
+                    "widget": ""
+                },
+                {
+                    "alarm": 0,
+                    "fft": false,
+                    "fftSamples": 1024,
+                    "graph": false,
+                    "led": true,
+                    "log": false,
+                    "max": 0,
+                    "min": 0,
+                    "title": "data.AUX2",
+                    "units": "",
+                    "value": "%8",
+                    "widget": ""
+                }
+            ],
+            "title": "Data",
+            "widget": ""
+        }
+    ],
+    "separator": "",
+    "title": "receiver_to_test_transmitter"
+}

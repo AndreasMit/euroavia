@@ -6,11 +6,11 @@ MPU6050 mpu6050(Wire, 0.02, 0.98); // Complementary filter coeffs [0.02 ACC, 0.9
 
 // --- Controller Constants ----
 
-#define K_P 1.5 // P constant //2.3
-#define K_D 1   // D constant //1.2
-#define K_I 0.4 // I constant //0.4
+#define K_P 3. // P constant  //pdb
+#define K_D 1.7 // D constant //1.2
+#define K_I 0 // I constant //0.4
 
-// -----------------------------
+// -----------------------------M
 
 #define THROTTLE_BASE_VAL 1250.0
 #define MIN_MOTOR_VAL 1000
@@ -119,9 +119,9 @@ void loop(){
     Serial.print("  Error: "); Serial.print(error);
     Serial.print("  Speed Left: "); Serial.print(motor_L_speed);
     Serial.print("  Speed Right: "); Serial.print(motor_R_speed); 
-    Serial.print("  PID: "); Serial.print(PID); 
+    Serial.print("  PID: "); Serial.print(PID);
     // Serial.print(c_angle);
-    Serial.println();
+    Serial.println(" ");
 
     //Keeping current error in memory
     prev_error = error;

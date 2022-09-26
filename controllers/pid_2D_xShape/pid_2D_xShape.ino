@@ -8,11 +8,12 @@
 MPU6050 mpu6050(Wire, 0.02, 0.98); // Complementary filter coeffs [0.02 ACC, 0.98 GYRO]
 
 /*  Address through which two modules communicate.
-    The pipe address does not have to be “00001”, 
-    it can be any 5-character string such as “alex0” 
+    The pipe address does not have to be “alex0”, 
+    it can be any 5-character string such as “0s08d” 
     as long as the transmitter and receiver both use the same address.
 */
-const byte address[6] = "00001"; 
+// const byte address[6] = "alex0"; 
+const uint64_t address = 0xE8E8F0F0E1LL;
 
 // --- Controller Constants ----
 
@@ -35,7 +36,7 @@ const byte address[6] = "00001";
 #define MAX_MOTOR_VAL 1500 //Motor clamping saturation limit
 
 //Motor pin numbers
-int motor_a_esc = 9; 
+int motor_a_esc = 8; 
 int motor_b_esc = 3;
 int motor_c_esc = 2;
 int motor_d_esc = 5;
@@ -45,7 +46,7 @@ Servo motor_b;
 Servo motor_c;
 Servo motor_d;
 
-RF24 radio(6, 8); // CE , CSN pins
+RF24 radio(6, 9); // CE , CSN pins
 
 // The sizeof this struct should not exceed 32 bytes
 // This gives us up to 32 8 bits channels
@@ -54,8 +55,8 @@ struct MyData {
   byte yaw;
   byte pitch;
   byte roll;
-  // byte AUX1;
-  // byte AUX2;
+  byte AUX1;
+  byte AUX2;
 };
 MyData data;
 
@@ -142,8 +143,8 @@ void loop(){
     recvData();
     
     //Calculating angles from data received
-    desired_angle_x = map(data.pitch, 0, 255, -45, 45); //Angle mapping values can be changed
-    desired_angle_y = map(data.roll, 0, 255, -45, 45);
+    desired_angle_x = map(data.pitch, 0, 255, -10, 10); //Angle mapping values can be changed
+    desired_angle_y = map(data.roll, 0, 255, -10, 10);
 
     //Calculating error
     error_x = desired_angle_x - c_angle_x; //current error
@@ -243,7 +244,7 @@ void getAnglesFiltered(float *angle_x, float *angle_y){
 */
 void serialPrintData(){
     //ORDER:
-    // time(1), angle_x(2), angle_y(3), speed_a(4), speed_b(5), speed_c(6), speed_d(7), PID_x(8), PID_y(9)
+    // time(1), angle_x(2), angle_y(3), speed_a(4), speed_b(5), speed_c(6), speed_d(7), PID_x(8), PID_y(9), lastRecvTime(10)
 
     Serial.print("/*");
     Serial.print(millis()); //ms since system started
@@ -263,6 +264,8 @@ void serialPrintData(){
     Serial.print(PID_x); 
     Serial.print(",");
     Serial.print(PID_y);
+    Serial.print(",");
+    Serial.print(lastRecvTime);
     Serial.println("*/");
 }
 
@@ -304,8 +307,8 @@ void resetRFData() {
     data.yaw = 127;
     data.pitch = 127;
     data.roll = 127;
-    // data.AUX1 = 0;
-    // data.AUX2 = 0;
+    data.AUX1 = 0;
+    data.AUX2 = 0;
 }
 
 //If there are available data received then read them

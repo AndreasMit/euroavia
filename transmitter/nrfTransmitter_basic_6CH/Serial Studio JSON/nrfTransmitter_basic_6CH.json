@@ -1,0 +1,174 @@
+{
+    "frameEnd": "",
+    "frameStart": "",
+    "groups": [
+        {
+            "datasets": [
+                {
+                    "alarm": 0,
+                    "fft": false,
+                    "fftSamples": 1024,
+                    "graph": false,
+                    "led": false,
+                    "log": false,
+                    "max": 0,
+                    "min": 0,
+                    "title": "Time",
+                    "units": "sec",
+                    "value": "%1",
+                    "widget": ""
+                },
+                {
+                    "alarm": 255,
+                    "fft": false,
+                    "fftSamples": 1024,
+                    "graph": false,
+                    "led": false,
+                    "log": false,
+                    "max": 255,
+                    "min": 0,
+                    "title": "data.throttle",
+                    "units": "",
+                    "value": "%2",
+                    "widget": "bar"
+                },
+                {
+                    "alarm": 255,
+                    "fft": false,
+                    "fftSamples": 1024,
+                    "graph": false,
+                    "led": false,
+                    "log": false,
+                    "max": 255,
+                    "min": 0,
+                    "title": "data.roll",
+                    "units": "",
+                    "value": "%4",
+                    "widget": "bar"
+                },
+                {
+                    "alarm": 255,
+                    "fft": false,
+                    "fftSamples": 1024,
+                    "graph": false,
+                    "led": false,
+                    "log": false,
+                    "max": 255,
+                    "min": 0,
+                    "title": "data.pitch",
+                    "units": "",
+                    "value": "%6",
+                    "widget": "bar"
+                },
+                {
+                    "alarm": 255,
+                    "fft": false,
+                    "fftSamples": 1024,
+                    "graph": false,
+                    "led": false,
+                    "log": false,
+                    "max": 255,
+                    "min": 0,
+                    "title": "data.yaw",
+                    "units": "",
+                    "value": "%8",
+                    "widget": "bar"
+                },
+                {
+                    "alarm": 0,
+                    "fft": false,
+                    "fftSamples": 1024,
+                    "graph": false,
+                    "led": true,
+                    "log": false,
+                    "max": 0,
+                    "min": 0,
+                    "title": "data.AUX1",
+                    "units": "",
+                    "value": "%10",
+                    "widget": ""
+                },
+                {
+                    "alarm": 0,
+                    "fft": false,
+                    "fftSamples": 1024,
+                    "graph": false,
+                    "led": false,
+                    "log": false,
+                    "max": 0,
+                    "min": 0,
+                    "title": "data.AUX2",
+                    "units": "",
+                    "value": "%11",
+                    "widget": ""
+                }
+            ],
+            "title": "Transmitted Data",
+            "widget": ""
+        },
+        {
+            "datasets": [
+                {
+                    "alarm": 0,
+                    "fft": false,
+                    "fftSamples": 1024,
+                    "graph": false,
+                    "led": false,
+                    "log": false,
+                    "max": 0,
+                    "min": 0,
+                    "title": "Roll Pin",
+                    "units": "",
+                    "value": "%5",
+                    "widget": ""
+                },
+                {
+                    "alarm": 0,
+                    "fft": false,
+                    "fftSamples": 1024,
+                    "graph": false,
+                    "led": false,
+                    "log": false,
+                    "max": 0,
+                    "min": 0,
+                    "title": "Pitch Pin",
+                    "units": "",
+                    "value": "%7",
+                    "widget": ""
+                },
+                {
+                    "alarm": 0,
+                    "fft": false,
+                    "fftSamples": 1024,
+                    "graph": false,
+                    "led": false,
+                    "log": false,
+                    "max": 0,
+                    "min": 0,
+                    "title": "Yaw Pin",
+                    "units": "",
+                    "value": "%9",
+                    "widget": ""
+                },
+                {
+                    "alarm": 0,
+                    "fft": false,
+                    "fftSamples": 1024,
+                    "graph": false,
+                    "led": false,
+                    "log": false,
+                    "max": 0,
+                    "min": 0,
+                    "title": "Throttle Pin",
+                    "units": "",
+                    "value": "%3",
+                    "widget": ""
+                }
+            ],
+            "title": "Raw Measured Data",
+            "widget": ""
+        }
+    ],
+    "separator": "",
+    "title": "nrfTransmitter_basic_6CH"
+}

@@ -1,0 +1,6 @@
+/*
+	TODO:
+		- add arm - disarm safety switch
+		- transmitter combined with ground station?
+
+*/
