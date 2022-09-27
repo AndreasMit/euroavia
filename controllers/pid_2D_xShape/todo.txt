@@ -5,7 +5,6 @@
 		- Consider changing time variable types from float to unsigned long ints
 
 		- Add PID for "YAW" motion as well?
-		- Add some filter like a moving average one to transmitter?
 
 		- Check how much time it takes to complete a loop
 

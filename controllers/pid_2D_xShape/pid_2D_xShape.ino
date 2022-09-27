@@ -15,22 +15,6 @@ MPU6050 mpu6050(Wire, 0.02, 0.98); // Complementary filter coeffs [0.02 ACC, 0.9
 // const byte address[6] = "alex0"; 
 const uint64_t address = 0xE8E8F0F0E1LL;
 
-// --- Controller Constants ----
-
-// X coordinate
-
-#define K_P_x 2 // P constant 
-#define K_D_x 0 // D constant 
-#define K_I_x 0 // I constant 
-
-// Y coordinate
-
-#define K_P_y 2 // P constant 
-#define K_D_y 0 // D constant 
-#define K_I_y 0 // I constant 
-
-// -----------------------------
-
 #define THROTTLE_BASE_VAL 1250.0 //initial speed of the motors, used in the end - RANDOM
 #define MIN_MOTOR_VAL 1000
 #define MAX_MOTOR_VAL 1500 //Motor clamping saturation limit
@@ -57,6 +41,9 @@ struct MyData {
   byte roll;
   byte AUX1;
   byte AUX2;
+
+  float K_P_x, K_I_x, K_D_x;
+  float K_P_y, K_I_y, K_D_y;
 };
 MyData data;
 
@@ -78,6 +65,8 @@ unsigned long lastRecvTime = 0; //last time we received commands from transmitte
 float pid_p_x, pid_i_x, pid_d_x, PID_x;
 float pid_p_y, pid_i_y, pid_d_y, PID_y;
 float motor_a_speed, motor_b_speed, motor_c_speed, motor_d_speed;
+float K_P_x = 0; float K_D_x = 0; float K_I_x = 0;
+float K_P_y = 0; float K_D_y = 0; float K_I_y = 0;
 
 float c_angle_x, c_angle_y; //current angle (most recent measurement)
 
@@ -141,7 +130,24 @@ void loop(){
     
     //Receiving data from transmitter
     recvData();
-    
+
+    //Check if transmitter changed the pid constants from the last iteration
+    //If yes, we need to reset the integral sum part to start all over again
+    if (pidConstsChanged_X()){
+        error_sum_x = 0;
+        //Setting received PID values to be used
+        K_P_x = data.K_P_x;
+        K_I_x = data.K_I_x;
+        K_D_x = data.K_D_x;
+    }
+    if (pidConstsChanged_Y()){
+        error_sum_y = 0;
+        //Setting received PID values to be used
+        K_P_y = data.K_P_y;
+        K_I_y = data.K_I_y;
+        K_D_y = data.K_D_y;
+    }
+
     //Calculating angles from data received
     desired_angle_x = map(data.pitch, 0, 255, -10, 10); //Angle mapping values can be changed
     desired_angle_y = map(data.roll, 0, 255, -10, 10);
@@ -244,7 +250,10 @@ void getAnglesFiltered(float *angle_x, float *angle_y){
 */
 void serialPrintData(){
     //ORDER:
-    // time(1), angle_x(2), angle_y(3), speed_a(4), speed_b(5), speed_c(6), speed_d(7), PID_x(8), PID_y(9), lastRecvTime(10)
+    // time(1), angle_x(2), angle_y(3), speed_a(4), speed_b(5), speed_c(6), speed_d(7), 
+    // PID_x(8), PID_y(9), Connection Lost?(10), Clamping?(11)
+    // K_P_x(12), K_I_x(13), K_D_x(14)
+    // K_P_y(15), K_I_y(16), K_D_y(17)
 
     Serial.print("/*");
     Serial.print(millis()); //ms since system started
@@ -265,7 +274,21 @@ void serialPrintData(){
     Serial.print(",");
     Serial.print(PID_y);
     Serial.print(",");
-    Serial.print(lastRecvTime);
+    Serial.print(millis() - lastRecvTime < 100?1:0);
+    Serial.print(",");
+    Serial.print((flag_x==0 || flag_y==0)?1:0);
+    Serial.print(",");
+    Serial.print(K_P_x);
+    Serial.print(",");
+    Serial.print(K_I_x);
+    Serial.print(",");
+    Serial.print(K_D_x);
+    Serial.print(",");
+    Serial.print(K_P_y);
+    Serial.print(",");
+    Serial.print(K_I_y);
+    Serial.print(",");
+    Serial.print(K_D_y);
     Serial.println("*/");
 }
 
@@ -322,5 +345,27 @@ void recvData(){
         //If no commands received for over 1 sec
         //Reset data to make drone hover in the air
         resetRFData();
+    }
+}
+
+//Check if transmitter changed the pid constants from the last iteration
+bool pidConstsChanged_X(){
+    //If changed => return true
+    if (K_P_x != data.K_P_x ||
+        K_I_x != data.K_I_x ||
+        K_D_x != data.K_D_x ) {
+            return true;            
+    } else {
+        return false;
+    }
+}
+bool pidConstsChanged_Y(){
+    //If changed => return true
+    if (K_P_y != data.K_P_y ||
+        K_I_y != data.K_I_y ||
+        K_D_y != data.K_D_y ) {
+            return true;            
+    } else {
+        return false;
     }
 }

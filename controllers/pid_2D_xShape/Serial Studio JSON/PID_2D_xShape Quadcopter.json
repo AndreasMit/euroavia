@@ -97,6 +97,144 @@
             ],
             "title": "Motors",
             "widget": ""
+        },
+        {
+            "datasets": [
+                {
+                    "alarm": 0,
+                    "fft": false,
+                    "fftSamples": 1024,
+                    "graph": false,
+                    "led": false,
+                    "log": false,
+                    "max": 0,
+                    "min": 0,
+                    "title": "Time",
+                    "units": "",
+                    "value": "%1",
+                    "widget": ""
+                },
+                {
+                    "alarm": 0,
+                    "fft": false,
+                    "fftSamples": 1024,
+                    "graph": false,
+                    "led": true,
+                    "log": false,
+                    "max": 0,
+                    "min": 0,
+                    "title": "Clamping?",
+                    "units": "",
+                    "value": "%11",
+                    "widget": ""
+                },
+                {
+                    "alarm": 0,
+                    "fft": false,
+                    "fftSamples": 1024,
+                    "graph": false,
+                    "led": true,
+                    "log": false,
+                    "max": 0,
+                    "min": 0,
+                    "title": "Connection?",
+                    "units": "",
+                    "value": "%10",
+                    "widget": ""
+                }
+            ],
+            "title": "Additional Data",
+            "widget": ""
+        },
+        {
+            "datasets": [
+                {
+                    "alarm": 0,
+                    "fft": false,
+                    "fftSamples": 1024,
+                    "graph": false,
+                    "led": false,
+                    "log": false,
+                    "max": 0,
+                    "min": 0,
+                    "title": "K_P_X",
+                    "units": "",
+                    "value": "%12",
+                    "widget": ""
+                },
+                {
+                    "alarm": 0,
+                    "fft": false,
+                    "fftSamples": 1024,
+                    "graph": false,
+                    "led": false,
+                    "log": false,
+                    "max": 0,
+                    "min": 0,
+                    "title": "K_I_X",
+                    "units": "",
+                    "value": "%13",
+                    "widget": ""
+                },
+                {
+                    "alarm": 0,
+                    "fft": false,
+                    "fftSamples": 1024,
+                    "graph": false,
+                    "led": false,
+                    "log": false,
+                    "max": 0,
+                    "min": 0,
+                    "title": "K_D_X",
+                    "units": "",
+                    "value": "%14",
+                    "widget": ""
+                },
+                {
+                    "alarm": 0,
+                    "fft": false,
+                    "fftSamples": 1024,
+                    "graph": false,
+                    "led": false,
+                    "log": false,
+                    "max": 0,
+                    "min": 0,
+                    "title": "K_P_Y",
+                    "units": "",
+                    "value": "%15",
+                    "widget": ""
+                },
+                {
+                    "alarm": 0,
+                    "fft": false,
+                    "fftSamples": 1024,
+                    "graph": false,
+                    "led": false,
+                    "log": false,
+                    "max": 0,
+                    "min": 0,
+                    "title": "K_I_Y",
+                    "units": "",
+                    "value": "%16",
+                    "widget": ""
+                },
+                {
+                    "alarm": 0,
+                    "fft": false,
+                    "fftSamples": 1024,
+                    "graph": false,
+                    "led": false,
+                    "log": false,
+                    "max": 0,
+                    "min": 0,
+                    "title": "K_D_Y",
+                    "units": "",
+                    "value": "%17",
+                    "widget": ""
+                }
+            ],
+            "title": "PID Constants",
+            "widget": ""
         }
     ],
     "separator": "",
