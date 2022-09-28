@@ -29,7 +29,8 @@ float K_I_y = 0; // I constant
 RF24 radio(6, 9); // CE , CSN pins
 
 //Arduino Pins
-int motor_safe_switch_pin = A0;
+int right_switch_pin = A5;
+int left_switch_pin = A0;
 int roll_pin = A4;
 int pitch_pin = A3;
 int yaw_pin = A2;
@@ -68,26 +69,25 @@ void setup()
   //Buzzer
   pinMode(buzzer_pin, OUTPUT);
   //Button AUX1
-  pinMode(motor_safe_switch_pin, INPUT_PULLUP);
+  pinMode(right_switch_pin, INPUT_PULLUP);
+  pinMode(left_switch_pin, INPUT_PULLUP);
 
   delay(200);
   //digitalWrite(17, HIGH); // Turning off builtin led in arduino
 
-  starting_beep();
+  starting_beep(3, 200, 200, 1000);
 }
 
 void loop()
 {
   // The calibration numbers used here should be measured 
-  // for your joysticks till they send the correct values.
-
-  check_safety_switch_before_throttle();
-  
+  // for your joysticks till they send the correct values.  
   data.yaw      = mapJoystickValues( analogRead(yaw_pin),  195, 522, 830, false );
   data.pitch    = mapJoystickValues( analogRead(pitch_pin), 213, 526, 825, true );
   data.roll     = mapJoystickValues( analogRead(roll_pin), 205, 530, 845, false );
-  data.AUX1     = digitalRead(motor_safe_switch_pin);         
-  data.AUX2     = 0;
+  data.throttle = mapJoystickValues( analogRead(throttle_pin), 228, 526, 829, true );
+  data.AUX1     = 1 - digitalRead(left_switch_pin);
+  data.AUX2     = digitalRead(right_switch_pin);        
   
   radio.write(&data, sizeof(MyData));
 
@@ -107,17 +107,6 @@ int mapJoystickValues(int val, int lower, int middle, int upper, bool reverse)
   else
     val = map(val, middle, upper, 128, 255);
   return ( reverse ? 255 - val : val );
-}
-
-//Checking for safety switch status
-void check_safety_switch_before_throttle(){
-  if (digitalRead(motor_safe_switch_pin) == LOW){
-    data.throttle = 0;  
-  }
-  if (digitalRead(motor_safe_switch_pin) == HIGH){
-    data.throttle = mapJoystickValues( analogRead(throttle_pin), 228, 526, 829, true );
-  }
-  
 }
 
 void resetRFData() {
@@ -173,11 +162,16 @@ void serialPrintDebug(){
 
 }
 
-void starting_beep(){
-  for (int i = 0; i < 3; ++i){
-    tone(buzzer_pin, 1000);
-    delay(200);
+
+/* Transmitter beeps 
+   eg. starting_beep(3, 200, 300, 1000)
+      => beeps with the buzzer for 3 times, 200 ms ON, 300 ms OFF, at 1000 Hz
+*/
+void starting_beep(int beepTimes, int on_time, int off_time, int tone_freq){
+  for (int i = 0; i < beepTimes; ++i){
+    tone(buzzer_pin, tone_freq);
+    delay(on_time);
     noTone(buzzer_pin);
-    delay(200);
+    delay(off_time);
   }
 }

@@ -15,15 +15,14 @@ MPU6050 mpu6050(Wire, 0.02, 0.98); // Complementary filter coeffs [0.02 ACC, 0.9
 // const byte address[6] = "alex0"; 
 const uint64_t address = 0xE8E8F0F0E1LL;
 
-#define THROTTLE_BASE_VAL 1250.0 //initial speed of the motors, used in the end - RANDOM
 #define MIN_MOTOR_VAL 1000
 #define MAX_MOTOR_VAL 1500 //Motor clamping saturation limit
 
 //Motor pin numbers
-int motor_a_esc = 8; 
-int motor_b_esc = 3;
-int motor_c_esc = 2;
-int motor_d_esc = 5;
+int motor_a_esc = A0; 
+int motor_b_esc = A1;
+int motor_c_esc = A2;
+int motor_d_esc = A3;
 
 Servo motor_a; 
 Servo motor_b;
@@ -61,6 +60,7 @@ float flag_y = 1.0;
 float c_time; //current time
 float prev_time, elapsed_time;
 unsigned long lastRecvTime = 0; //last time we received commands from transmitter
+unsigned long lastArmedTime = 0; //last motors were armed
 
 float pid_p_x, pid_i_x, pid_d_x, PID_x;
 float pid_p_y, pid_i_y, pid_d_y, PID_y;
@@ -70,14 +70,21 @@ float K_P_y = 0; float K_D_y = 0; float K_I_y = 0;
 
 float c_angle_x, c_angle_y; //current angle (most recent measurement)
 
+bool motorsArmed = false;
+float desired_throttle = 0; //map(data.throttle, 0, 255, MIN_MOTOR_VAL, MAX_MOTOR_VAL)
+
 
 void setup(){
 
+    //Setting pinModes
+    pinMode(LED_BUILTIN, OUTPUT);
+    pinMode(motor_a_esc, OUTPUT);
+    pinMode(motor_b_esc, OUTPUT);
+    pinMode(motor_c_esc, OUTPUT);
+    pinMode(motor_d_esc, OUTPUT);
+
+
     //MOTOR ARM
-    //Sending initial stop signal to the motors
-    // digitalWrite(motor_left_esc, 0); //We need to have them low before attaching, otherwise 
-    // digitalWrite(motor_right_esc, 0); //when arduino powers on they go crazy and then turn off (Safety Measure!!)
-    // delay(100);
     motor_a.attach(motor_a_esc);
     motor_b.attach(motor_b_esc);
     motor_c.attach(motor_c_esc);
@@ -89,7 +96,8 @@ void setup(){
     delay(500);
     
 
-    //Initialization
+
+    // --------- Initialization ----------
     //Serial
     Serial.begin(9600);
     //I2C for mpu6050
@@ -109,12 +117,14 @@ void setup(){
     Wire.write(0b00000100);
     Wire.endTransmission(); delay(100);
     
-    mpu6050.calcGyroOffsets(true);
+    //Calculating gyro offsets
+    mpu6050.calcGyroOffsets(true); 
+
 
     //Start counting time in milliseconds
     c_time = millis();
 
-    delay(500);
+    delay(1000);
 }
 
 void loop(){
@@ -124,12 +134,18 @@ void loop(){
     c_time = millis();
     elapsed_time = (c_time - prev_time) / 1000; //time passed in [sec]
 
+
+
     //Reading sensor angle
     mpu6050.update();
     getAnglesFiltered(&c_angle_x, &c_angle_y);
+
+
     
     //Receiving data from transmitter
     recvData();
+
+
 
     //Check if transmitter changed the pid constants from the last iteration
     //If yes, we need to reset the integral sum part to start all over again
@@ -137,26 +153,34 @@ void loop(){
         error_sum_x = 0;
         //Setting received PID values to be used
         K_P_x = data.K_P_x;
-        K_I_x = data.K_I_x;
+        K_I_x = (data.throttle <= 3) ? 0 : data.K_I_x; 
         K_D_x = data.K_D_x;
+        //If throttle is near 0, remove I terms.
+        //This means the motors will not start spooling up on the ground, and the I terms will always start from 0 on takeoff.
     }
     if (pidConstsChanged_Y()){
         error_sum_y = 0;
         //Setting received PID values to be used
         K_P_y = data.K_P_y;
-        K_I_y = data.K_I_y;
+        K_I_y = (data.throttle <= 3) ? 0 : data.K_I_y; //if throttle is near 0, remove I terms
         K_D_y = data.K_D_y;
     }
+
+
 
     //Calculating angles from data received
     desired_angle_x = map(data.pitch, 0, 255, -10, 10); //Angle mapping values can be changed
     desired_angle_y = map(data.roll, 0, 255, -10, 10);
+
+
 
     //Calculating error
     error_x = desired_angle_x - c_angle_x; //current error
     error_y = desired_angle_y - c_angle_y;
     error_sum_x += (error_x + prev_error_x) / 2 * elapsed_time; //Integration method: Trapezoidal Rule
     error_sum_y += (error_y + prev_error_y) / 2 * elapsed_time;
+
+
 
     // ----- P I D CONTROLLER --------
     
@@ -176,6 +200,8 @@ void loop(){
 
     // -----------------------------
 
+
+
     /*
         Since motor speed goes from 1000 to 2000, the maximun we could add from 
         stop (1000) is 1000 and the max we could substract from top speed (2000)
@@ -184,29 +210,43 @@ void loop(){
     PID_x = constrain(PID_x, -500, 500);
     PID_y = constrain(PID_y, -500, 500);
 
-    //Writing final calculated motor speed
-    motor_a_speed = constrain(THROTTLE_BASE_VAL + PID_x - PID_y, MIN_MOTOR_VAL, MAX_MOTOR_VAL); //Clamping saturation limit
-    motor_b_speed = constrain(THROTTLE_BASE_VAL + PID_x + PID_y, MIN_MOTOR_VAL, MAX_MOTOR_VAL);
-    motor_c_speed = constrain(THROTTLE_BASE_VAL - PID_x - PID_y, MIN_MOTOR_VAL, MAX_MOTOR_VAL);
-    motor_d_speed = constrain(THROTTLE_BASE_VAL - PID_x + PID_y, MIN_MOTOR_VAL, MAX_MOTOR_VAL);
 
-    motor_a.writeMicroseconds(motor_a_speed);
-    motor_b.writeMicroseconds(motor_b_speed);
-    motor_c.writeMicroseconds(motor_c_speed);
-    motor_d.writeMicroseconds(motor_d_speed);
+    //Writing final calculated motor speed
+    desired_throttle = map(data.throttle, 0, 255, MIN_MOTOR_VAL, MAX_MOTOR_VAL);
+    motor_a_speed = constrain(desired_throttle + PID_x - PID_y, MIN_MOTOR_VAL, MAX_MOTOR_VAL); //Clamping saturation limit
+    motor_b_speed = constrain(desired_throttle + PID_x + PID_y, MIN_MOTOR_VAL, MAX_MOTOR_VAL);
+    motor_c_speed = constrain(desired_throttle - PID_x - PID_y, MIN_MOTOR_VAL, MAX_MOTOR_VAL);
+    motor_d_speed = constrain(desired_throttle - PID_x + PID_y, MIN_MOTOR_VAL, MAX_MOTOR_VAL);
+
+    writeMotorSpeeds();
+
+
 
     //Anti-Windup Method
     integrators_anti_windup();
 
+
     //Serial Monitor Data Output
     serialPrintData();
+
 
     //Keeping current error in memory
     prev_error_x = error_x;
     prev_error_y = error_y;
 
-    //Final delay before next iteration
-    delay(10);
+
+
+    //Checking fast safe switch
+    //if it's flipped -> disarm the motors
+    if (motorsArmed == true && data.AUX1 == 1 && millis() - lastArmedTime > 1000){
+        motorsArmed = false;
+    }
+    //if motors disarmed, check for arming sequence
+    else if (motorsArmed == false && data.throttle <= 3 && data.AUX1 == 1 && data.AUX2 == 1 && millis() - lastRecvTime < 100){
+        motorsArmed = true;
+        lastArmedTime = millis();
+    }
+
 }
 
 
@@ -254,9 +294,10 @@ void serialPrintData(){
     // PID_x(8), PID_y(9), Connection Lost?(10), Clamping?(11)
     // K_P_x(12), K_I_x(13), K_D_x(14)
     // K_P_y(15), K_I_y(16), K_D_y(17)
+    // motorsArmed?(18), data.AUX1(19), data.AUX2(20)
 
     Serial.print("/*");
-    Serial.print(millis()); //ms since system started
+    Serial.print(millis()/1000); //number of [sec] since system started
     Serial.print(",");
     Serial.print(c_angle_x); 
     Serial.print(",");
@@ -289,6 +330,12 @@ void serialPrintData(){
     Serial.print(K_I_y);
     Serial.print(",");
     Serial.print(K_D_y);
+    Serial.print(",");
+    Serial.print(motorsArmed==true?1:0);
+    Serial.print(",");
+    Serial.print(data.AUX1);
+    Serial.print(",");
+    Serial.print(data.AUX2);
     Serial.println("*/");
 }
 
@@ -299,10 +346,10 @@ void integrators_anti_windup(){
        constrained     -> bool = 1 
     */
     bool out_1 = 
-        (motor_a_speed != THROTTLE_BASE_VAL + PID_x - PID_y) ||
-        (motor_b_speed != THROTTLE_BASE_VAL + PID_x + PID_y) ||
-        (motor_c_speed != THROTTLE_BASE_VAL - PID_x - PID_y) ||
-        (motor_d_speed != THROTTLE_BASE_VAL - PID_x + PID_y) ;  
+        (motor_a_speed != desired_throttle + PID_x - PID_y) ||
+        (motor_b_speed != desired_throttle + PID_x + PID_y) ||
+        (motor_c_speed != desired_throttle - PID_x - PID_y) ||
+        (motor_d_speed != desired_throttle - PID_x + PID_y) ;  
 
     
     /* Check if the error and the pid output have the same sign
@@ -345,6 +392,7 @@ void recvData(){
         //If no commands received for over 1 sec
         //Reset data to make drone hover in the air
         resetRFData();
+        motorsArmed = false;
     }
 }
 
@@ -367,5 +415,34 @@ bool pidConstsChanged_Y(){
             return true;            
     } else {
         return false;
+    }
+}
+
+//Write calculated motor speed ONLY IF motors are armed and ready
+//Otherwise turn them off
+void writeMotorSpeeds(){
+    if (motorsArmed == false){
+        motor_a_speed = MIN_MOTOR_VAL;
+        motor_b_speed = MIN_MOTOR_VAL;
+        motor_c_speed = MIN_MOTOR_VAL;
+        motor_d_speed = MIN_MOTOR_VAL;
+    }
+
+    motor_a.writeMicroseconds(motor_a_speed);
+    motor_b.writeMicroseconds(motor_b_speed);
+    motor_c.writeMicroseconds(motor_c_speed);
+    motor_d.writeMicroseconds(motor_d_speed);
+
+}
+
+/*  Blink builtin led
+    eg. blinkLED(5, 100, 100); //blink 5 times, 100mSec on, 100mSec off  
+*/
+void blinkLED(int blinkTimes, int on_mSecs, int off_mSecs){
+    for (int i = 0; i < blinkTimes; i++){
+        digitalWrite(LED_BUILTIN, HIGH);
+        delay(on_mSecs);
+        digitalWrite(LED_BUILTIN, LOW);
+        delay(off_mSecs);
     }
 }

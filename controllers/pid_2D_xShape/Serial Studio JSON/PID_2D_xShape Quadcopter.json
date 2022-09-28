@@ -141,6 +141,20 @@
                     "units": "",
                     "value": "%10",
                     "widget": ""
+                },
+                {
+                    "alarm": 0,
+                    "fft": false,
+                    "fftSamples": 1024,
+                    "graph": false,
+                    "led": true,
+                    "log": false,
+                    "max": 0,
+                    "min": 0,
+                    "title": "Motors ARMED?",
+                    "units": "",
+                    "value": "%18",
+                    "widget": ""
                 }
             ],
             "title": "Additional Data",
@@ -234,6 +248,40 @@
                 }
             ],
             "title": "PID Constants",
+            "widget": ""
+        },
+        {
+            "datasets": [
+                {
+                    "alarm": 0,
+                    "fft": false,
+                    "fftSamples": 1024,
+                    "graph": false,
+                    "led": true,
+                    "log": false,
+                    "max": 0,
+                    "min": 0,
+                    "title": "AUX1",
+                    "units": "",
+                    "value": "%19",
+                    "widget": ""
+                },
+                {
+                    "alarm": 0,
+                    "fft": false,
+                    "fftSamples": 1024,
+                    "graph": false,
+                    "led": true,
+                    "log": false,
+                    "max": 0,
+                    "min": 0,
+                    "title": "AUX2",
+                    "units": "",
+                    "value": "%20",
+                    "widget": ""
+                }
+            ],
+            "title": "Switches",
             "widget": ""
         }
     ],

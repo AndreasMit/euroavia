@@ -6,13 +6,6 @@
 
 		- Add PID for "YAW" motion as well?
 
-		- Check how much time it takes to complete a loop
-
-		- Make final loop delay smaller?
-
-		- void recvData()
-			"if" or "while"?
-
-		- Consider adding a safe switch to transmitter. If switch == off, motors == off as well no matter what
+		- Check how much time it takes to complete a loop   
 
 */
