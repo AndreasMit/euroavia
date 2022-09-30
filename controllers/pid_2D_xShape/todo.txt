@@ -6,6 +6,4 @@
 
 		- Add PID for "YAW" motion as well?
 
-		- Check how much time it takes to complete a loop   
-
 */

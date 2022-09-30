@@ -65,8 +65,9 @@ unsigned long lastArmedTime = 0; //last motors were armed
 float pid_p_x, pid_i_x, pid_d_x, PID_x;
 float pid_p_y, pid_i_y, pid_d_y, PID_y;
 float motor_a_speed, motor_b_speed, motor_c_speed, motor_d_speed;
-float K_P_x = 0; float K_D_x = 0; float K_I_x = 0;
-float K_P_y = 0; float K_D_y = 0; float K_I_y = 0;
+float yaw_speed;
+float K_P_x = 0, K_D_x = 0, K_I_x = 0;
+float K_P_y = 0, K_D_y = 0, K_I_y = 0;
 
 float c_angle_x, c_angle_y; //current angle (most recent measurement)
 
@@ -213,10 +214,12 @@ void loop(){
 
     //Writing final calculated motor speed
     desired_throttle = map(data.throttle, 0, 255, MIN_MOTOR_VAL, MAX_MOTOR_VAL);
-    motor_a_speed = constrain(desired_throttle + PID_x - PID_y, MIN_MOTOR_VAL, MAX_MOTOR_VAL); //Clamping saturation limit
-    motor_b_speed = constrain(desired_throttle + PID_x + PID_y, MIN_MOTOR_VAL, MAX_MOTOR_VAL);
-    motor_c_speed = constrain(desired_throttle - PID_x - PID_y, MIN_MOTOR_VAL, MAX_MOTOR_VAL);
-    motor_d_speed = constrain(desired_throttle - PID_x + PID_y, MIN_MOTOR_VAL, MAX_MOTOR_VAL);
+    yaw_speed = map(data.yaw, 0, 255, -0.1*data.throttle, 0.1*data.throttle);
+
+    motor_a_speed = constrain(desired_throttle + PID_x - PID_y + yaw_speed, MIN_MOTOR_VAL, MAX_MOTOR_VAL); //Clamping saturation limit
+    motor_b_speed = constrain(desired_throttle + PID_x + PID_y - yaw_speed, MIN_MOTOR_VAL, MAX_MOTOR_VAL);
+    motor_c_speed = constrain(desired_throttle - PID_x - PID_y - yaw_speed, MIN_MOTOR_VAL, MAX_MOTOR_VAL);
+    motor_d_speed = constrain(desired_throttle - PID_x + PID_y + yaw_speed, MIN_MOTOR_VAL, MAX_MOTOR_VAL);
 
     writeMotorSpeeds();
 
@@ -291,7 +294,7 @@ void getAnglesFiltered(float *angle_x, float *angle_y){
 void serialPrintData(){
     //ORDER:
     // time(1), angle_x(2), angle_y(3), speed_a(4), speed_b(5), speed_c(6), speed_d(7), 
-    // PID_x(8), PID_y(9), Connection Lost?(10), Clamping?(11)
+    // PID_x(8), PID_y(9), Connection Lost?(10), Clamping?(11), loop_freq(21)[Hz]
     // K_P_x(12), K_I_x(13), K_D_x(14)
     // K_P_y(15), K_I_y(16), K_D_y(17)
     // motorsArmed?(18), data.AUX1(19), data.AUX2(20)
@@ -336,6 +339,8 @@ void serialPrintData(){
     Serial.print(data.AUX1);
     Serial.print(",");
     Serial.print(data.AUX2);
+    Serial.print(",");
+    Serial.print(1000 / elapsed_time); //Loop Frequency [Hz]
     Serial.println("*/");
 }
 
@@ -346,10 +351,10 @@ void integrators_anti_windup(){
        constrained     -> bool = 1 
     */
     bool out_1 = 
-        (motor_a_speed != desired_throttle + PID_x - PID_y) ||
-        (motor_b_speed != desired_throttle + PID_x + PID_y) ||
-        (motor_c_speed != desired_throttle - PID_x - PID_y) ||
-        (motor_d_speed != desired_throttle - PID_x + PID_y) ;  
+        (motor_a_speed != desired_throttle + PID_x - PID_y + yaw_speed) ||
+        (motor_b_speed != desired_throttle + PID_x + PID_y - yaw_speed) ||
+        (motor_c_speed != desired_throttle - PID_x - PID_y - yaw_speed) ||
+        (motor_d_speed != desired_throttle - PID_x + PID_y + yaw_speed) ;  
 
     
     /* Check if the error and the pid output have the same sign
@@ -390,7 +395,7 @@ void recvData(){
     //Connection Lost?
     else if (millis() - lastRecvTime > 1000){ 
         //If no commands received for over 1 sec
-        //Reset data to make drone hover in the air
+        //Reset data and Disarm the motors to stop them immediately
         resetRFData();
         motorsArmed = false;
     }

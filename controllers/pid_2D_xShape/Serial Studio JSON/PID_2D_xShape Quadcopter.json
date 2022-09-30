@@ -110,10 +110,30 @@
                     "max": 0,
                     "min": 0,
                     "title": "Time",
-                    "units": "",
+                    "units": "sec",
                     "value": "%1",
                     "widget": ""
                 },
+                {
+                    "alarm": 0,
+                    "fft": false,
+                    "fftSamples": 1024,
+                    "graph": false,
+                    "led": false,
+                    "log": false,
+                    "max": 0,
+                    "min": 0,
+                    "title": "Loop Freq",
+                    "units": "Hz",
+                    "value": "%21",
+                    "widget": ""
+                }
+            ],
+            "title": "Additional Data",
+            "widget": ""
+        },
+        {
+            "datasets": [
                 {
                     "alarm": 0,
                     "fft": false,
@@ -157,7 +177,7 @@
                     "widget": ""
                 }
             ],
-            "title": "Additional Data",
+            "title": "LED Indicators",
             "widget": ""
         },
         {
