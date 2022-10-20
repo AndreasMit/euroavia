@@ -1,0 +1,24 @@
+9,6,5,3 instead of 9,10,11,3 //that what electo did
+
+i used the same order as electro but i changed the pidmix ( the place where each motor is by default) 
+thus i kept the special settings made for pin 5 and 6 (software pwm ) and just changed their place 
+
+i also remove line 436 in output.cpp which for some reason reduces a lot the pwm signal and thus the motors stop and restart causing serious delay in response while 
+flying.
+
+file changed in comparison with original Multiwii:
+multiwii.ino
+multiwii.cpp
+nrf24rx.cpp
+nrf24rx.h
+output.cpp
+rx.cpp
+config.h
+def.h
+
+Settings that i changed are in the files:
+i only change files output.cpp and config.cpp
+also changed the CE,CSN in nrf_rx.cpp file.
+
+!i tried to merge the multiwii_nrf with dc motors with multiwii_ppm with bldc motor
+

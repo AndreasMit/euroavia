@@ -1,0 +1,5 @@
+to add nrf24 transmission :
+add libraries to the mulitiwii.ino
+add #define nrf in config.h
+and add file nrf24.cpp and .h in the same directory
+
