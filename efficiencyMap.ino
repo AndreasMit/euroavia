@@ -35,7 +35,7 @@ void setup(){
 
 // we test for offset 10 times and we take the average offset
 
-  for(int i=0; i<offset_size; i++){
+  for(int i=0; i<offset_times; i++){
     offset += analogRead(A0) - (1023/2);
   }
   offset /= offset_size;
