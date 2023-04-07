@@ -30,7 +30,7 @@
                     "title": "data.throttle",
                     "units": "",
                     "value": "%2",
-                    "widget": "bar"
+                    "widget": "gauge"
                 },
                 {
                     "alarm": 255,
