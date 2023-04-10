@@ -1,0 +1,8 @@
+Comments:
+	- why "-" in from of 10000 inside the sqrt?
+
+	  if(v_read<512){
+    		airspeed = -sqrt((-10000.0*((v_read/1023.0)-0.5))/air_density);
+	  }else{
+		airspeed = sqrt((-10000.0*((v_read/1023.0)-0.5))/air_density);
+	  }

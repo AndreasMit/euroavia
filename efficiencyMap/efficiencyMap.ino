@@ -19,10 +19,10 @@ char filename[] = "Measurements.csv";
 
 // ------------------------------
 
-float airspeed = 0;
-int pitot_offset = 0; // offset if there is flow when starting pitot
+float pitot_airspeed = 0;
+float pitot_offset = 0; // offset if there is flow when starting pitot
 int pitot_offset_times = 10; 
-
+float dyn_force = 0; //  force measured from dynamometer
 
 void setup(){
   Serial.begin(38400); // too high for pitot maybe??
@@ -61,25 +61,28 @@ void loop(){
 
   // if it reads below 512 we need to equate to a negative velocity
   if(v_read<512){
-    airspeed = -sqrt((-10000.0*((v_read/1023.0)-0.5))/air_density);
+    pitot_airspeed = -sqrt((-10000.0*((v_read/1023.0)-0.5))/air_density);
   }else{
-    airspeed = sqrt((-10000.0*((v_read/1023.0)-0.5))/air_density);
+    pitot_airspeed = sqrt((-10000.0*((v_read/1023.0)-0.5))/air_density);
   }
   
-  // pitot should delay 10secs for stability
-  Serla.print("/*") //Format for Serial Studio
-  Serial.print(scale.get_units(),3); // reading minus tare and divided by calibration parameter
+  // Reading Scale
+  dyn_force = scale.get_units();
+
+  // Sending to Serial Studio
+  Serial.print("/*") //Format for Serial Studio
+  Serial.print(dyn_force); // reading minus tare and divided by calibration parameter
   Serial.print(",");
-  Serial.print(airspeed);
+  Serial.print(pitot_airspeed);
   Serial.print("*/\n")
 
   // Store data in SD card
   // firt we check that the file is open and working
   myFile = SD.open(filename, FILE_APPEND);
   if (myFile) {
-    myFile.println(scale.get_units(),3);
-    myFile.print("\t");
-    myFile.print(airspeed);
+    myFile.println(dyn_force);
+    myFile.print(",");
+    myFile.print(pitot_airspeed);
     myFile.print("\n")
     myFile.close(); // ensures the data is saved
     
