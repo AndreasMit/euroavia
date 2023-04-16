@@ -21,11 +21,11 @@ double pitot_offset = 0; // offset if there is flow when starting pitot
 const byte pitot_offset_times = 10; 
 double dyn_force = 0; //  force measured from dynamometer
 
-
+// This is the file offset that will be appended to the filename.
 int file_offset = 0;
 
 // Arduino Control Through Serial Monitor
-char sd_input; // Should be 'y' in order to start the SD card initialization...
+char init_sd_input; // Should be 'y' in order to start the SD card initialization...
 char measurements_input; // Should be 'y' in order to start measuring...
 char close_input; // If 'y' then we should close the measurements file...
 
