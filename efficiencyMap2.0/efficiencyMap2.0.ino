@@ -111,7 +111,7 @@ void loop()
   // Reading pitot
   double v_read = analogRead(PITOT_PIN) - pitot_offset; 
 
-  pitot_airspeed = sqrt((-10000.0*((v_read / 1023.0) -0.5)) / air_density);
+  pitot_airspeed = sqrt((-10000.0*((v_read / 1023.0) - 0.5)) / air_density);
 
   // if it reads below 512 we need to equate to a negative velocity
   if(v_read < 512)
