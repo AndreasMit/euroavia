@@ -7,7 +7,7 @@ File myFile;
 
 // Input Variables --------------
 const byte chipSelect = 10;
-const byte LOADCELL_DOUT_PIN = 2;
+const byte LOADCELL_DOUT_PIN = 2; 
 const byte LOADCELL_SCK_PIN = 13;
 const byte PITOT_PIN = A0;
 
@@ -18,17 +18,19 @@ double loadcell_scale = 2000.0;
 
 double pitot_airspeed = 0;
 double pitot_offset = 0; // offset if there is flow when starting pitot
-byte pitot_offset_times = 10; 
+const byte pitot_offset_times = 10; 
 double dyn_force = 0; //  force measured from dynamometer
 
 
 int file_offset = 0;
-char sd_input; // should be 'y' in order to start the SD card initialization...
-char measurements_input; // should be 'y' in order to start measuring...
-char close_input; // if 'y' then we should close the measurements file...
 
-void setup()
-{
+// Arduino Control Through Serial Monitor
+char sd_input; // Should be 'y' in order to start the SD card initialization...
+char measurements_input; // Should be 'y' in order to start measuring...
+char close_input; // If 'y' then we should close the measurements file...
+
+
+void setup() {
   // Open serial communications and wait for port to open:
   Serial.begin(9600);
   // while (!Serial.available());
@@ -42,7 +44,7 @@ void setup()
     if (Serial.available())
       init_sd_input = Serial.read();
   }
-  
+
 
 
 
@@ -71,9 +73,9 @@ void setup()
 
   // PITOT BEGIN INITIALIZATION
 
-  //Setting up PITOT
-  // we test for offset 10 times and we take the average offset
-  for(int i=0; i<pitot_offset_times; ++i){
+  // Setting up PITOT
+  // We test for offset 10 times and we take the average offset
+  for(int i=0; i < pitot_offset_times; ++i){
     pitot_offset += analogRead(PITOT_PIN) - (1023 / 2);
   }
   pitot_offset /= pitot_offset_times;
@@ -84,16 +86,18 @@ void setup()
 
 void loop()
 {
-  // if we have closed the file then don't execute the rest of the while loop
+  // If we have closed the measurements file then don't execute the rest of the while loop.
+  // We have decided we don't want any more measurements.
   if (close_input == 'y') continue;
 
 
 
-  // if 'y' is typed in the Serial monitor then we should commence measurements...
+  // If 'y' is typed in the Serial monitor then we should start getting measurements...
   while(measurements_input != 'y') {
     if (Serial.available())
         measurements_input = Serial.read();
   }
+
 
   while(Serial.available()) {
     close_input = Serial.read();
@@ -117,8 +121,8 @@ void loop()
   dyn_force = scale.get_units();
 
   // Sending to Serial Studio
-  Serial.print("/*"); //Format for Serial Studio
-  Serial.print(dyn_force); // reading minus tare and divided by calibration parameter
+  Serial.print("/*"); // Format for Serial Studio
+  Serial.print(dyn_force); // Reading minus tare and divided by calibration parameter
   Serial.print(",");
   Serial.print(pitot_airspeed);
   Serial.print("*/\n");
