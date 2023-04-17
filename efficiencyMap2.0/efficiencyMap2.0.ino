@@ -88,7 +88,7 @@ void loop()
 {
   // If we have closed the measurements file then don't execute the rest of the while loop.
   // We have decided we don't want any more measurements.
-  if (close_input == 'y') continue;
+  if (close_input == 'y') return;
 
 
 
@@ -148,7 +148,6 @@ void loop()
 // This function returns the correct filename 
 //of the measurements file given a certain offset.
 String get_filename(int file_offset) {
-  String filename = "test" + String(file_offset) + ".csv";
-  return filename;
+  return "test" + String(file_offset) + ".csv";
 }
 
