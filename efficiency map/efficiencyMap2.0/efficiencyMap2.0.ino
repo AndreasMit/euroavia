@@ -25,9 +25,9 @@ double dyn_force = 0; //  force measured from dynamometer
 int file_offset = 0;
 
 // Arduino Control Through Serial Monitor
-char init_sd_input; // Should be 'y' in order to start the SD card initialization...
-char measurements_input; // Should be 'y' in order to start measuring...
-char close_input; // If 'y' then we should close the measurements file...
+char init_sd_input = 'n'; // Should be 'y' in order to start the SD card initialization...
+char measurements_input = 'n'; // Should be 'y' in order to start measuring...
+char close_input = 'n'; // If 'y' then we should close the measurements file...
 
 
 void setup() {
@@ -99,9 +99,9 @@ void loop()
   }
 
 
-  while(Serial.available()) {
+  while(Serial.available()) { //maybe this is not right
     close_input = Serial.read();
-    if (close_input != 'y') continue;
+    if (close_input != 'y') continue; //check whether it skips the whole while loop and not just this loop
 
     // if close_input == 'y'
     myFile.close();
@@ -113,7 +113,7 @@ void loop()
 
   // if it reads below 512 we need to equate to a negative velocity
   if (v_read < 512)
-    pitot_airspeed = -sqrt((-10000.0*((v_read / 1023.0) - 0.5)) / air_density);
+    pitot_airspeed = -sqrt((-10000.0*((v_read / 1023.0) - 0.5)) / air_density); //maybe we could simplify these operations
   else
     pitot_airspeed = +sqrt((+10000.0*((v_read / 1023.0) - 0.5)) / air_density);
 
