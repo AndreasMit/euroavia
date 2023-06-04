@@ -6,6 +6,7 @@
 #include <RF24.h>
 
 MPU6050 mpu6050(Wire, 0.02, 0.98); // Complementary filter coeffs [0.02 ACC, 0.98 GYRO]
+uint8_t pipeNum; // Variable to store the pipe number
 
 /*  Address through which two modules communicate.
     The pipe address does not have to be “alex0”, 
@@ -13,7 +14,8 @@ MPU6050 mpu6050(Wire, 0.02, 0.98); // Complementary filter coeffs [0.02 ACC, 0.9
     as long as the transmitter and receiver both use the same address.
 */
 // const byte address[6] = "alex0"; 
-const uint64_t address = 0xE8E8F0F0E1LL;
+const uint64_t transmitter_address = 0xE8E8F0F0E1LL; 
+const uint64_t GS_nrf_address = 0xF0F0F0F0D2LL; // Ground Station NRF Address
 
 #define MIN_MOTOR_VAL 1000
 #define MAX_MOTOR_VAL 1500 //Motor clamping saturation limit
@@ -29,22 +31,58 @@ Servo motor_b;
 Servo motor_c;
 Servo motor_d;
 
+//Buzzer Pin
+int buzzer_pin = 7;
+
 RF24 radio(6, 9); // CE , CSN pins
 
-// The sizeof this struct should not exceed 32 bytes
-// This gives us up to 32 8 bits channels
-struct MyData {
+/*
+    The sizeof this struct should not exceed 32 bytes
+    This gives us up to 32 8 bits channels
+    byte: 1 byte
+    int: 2 bytes
+    float: 4 bytes
+*/
+struct TransmitterData {
   byte throttle;
   byte yaw;
   byte pitch;
   byte roll;
   byte AUX1;
   byte AUX2;
-
-  float K_P_x, K_I_x, K_D_x;
-  float K_P_y, K_I_y, K_D_y;
 };
-MyData data;
+TransmitterData data;
+
+struct TelemetryData {
+    float c_time; //current time in millis()
+    
+    float angle_x;
+    float angle_y;
+
+    //Transmitter Data
+    byte throttle;
+    byte yaw;
+    byte pitch;
+    byte roll;
+    byte connection_status; //connection with transmitter on the ground
+
+    byte motorsArmed;
+};
+TelemetryData telemetry;
+
+/*
+    Struct to store Ground Station Data
+    gs_command = 1 : arm motors
+    gs_command = 2 : disarm motors
+    gs_command = 0 : neutral - do nothing
+*/
+struct GroundStationData {
+    int gs_command; //Number sent from ground to choose action 
+
+    float K_P_x, K_I_x, K_D_x;
+    float K_P_y, K_I_y, K_D_y;
+};
+GroundStationData gs_data;
 
 //Variables
 float desired_angle_x = 0.0;
@@ -108,7 +146,9 @@ void setup(){
     radio.begin();
     radio.setAutoAck(false);
     radio.setDataRate(RF24_250KBPS); // Both endpoints must have this set the same
-    radio.openReadingPipe(1, address); //set receiving address
+    radio.openWritingPipe(GS_nrf_address);
+    radio.openReadingPipe(1, transmitter_address); //set receiving address
+    radio.openReadingPipe(2, GS_nrf_address);
     radio.startListening(); //Set module as receiver
     resetRFData();
 
@@ -125,6 +165,8 @@ void setup(){
     //Start counting time in milliseconds
     c_time = millis();
 
+    //Buzzer beep
+    starting_beep(3, 200, 200, 1000); 
     delay(1000);
 }
 
@@ -143,8 +185,10 @@ void loop(){
 
 
     
-    //Receiving data from transmitter
+    //Receiving data from Transmitter and Ground Station
     recvData();
+    //Sending Telemetry data to ground
+    sendTelemetryData();
 
 
 
@@ -153,18 +197,18 @@ void loop(){
     if (pidConstsChanged_X()){
         error_sum_x = 0;
         //Setting received PID values to be used
-        K_P_x = data.K_P_x;
-        K_I_x = (data.throttle <= 3) ? 0 : data.K_I_x; 
-        K_D_x = data.K_D_x;
+        K_P_x = gs_data.K_P_x;
+        K_I_x = (data.throttle <= 3) ? 0 : gs_data.K_I_x; 
+        K_D_x = gs_data.K_D_x;
         //If throttle is near 0, remove I terms.
         //This means the motors will not start spooling up on the ground, and the I terms will always start from 0 on takeoff.
     }
     if (pidConstsChanged_Y()){
         error_sum_y = 0;
         //Setting received PID values to be used
-        K_P_y = data.K_P_y;
-        K_I_y = (data.throttle <= 3) ? 0 : data.K_I_y; //if throttle is near 0, remove I terms
-        K_D_y = data.K_D_y;
+        K_P_y = gs_data.K_P_y;
+        K_I_y = (data.throttle <= 3) ? 0 : gs_data.K_I_y; //if throttle is near 0, remove I terms
+        K_D_y = gs_data.K_D_y;
     }
 
 
@@ -388,25 +432,37 @@ void resetRFData() {
 
 //If there are available data received then read them
 void recvData(){
-    if ( radio.available() ){
-        radio.read(&data, sizeof(MyData));
-        lastRecvTime = millis();
-    } 
-    //Connection Lost?
+
+    if (radio.available(&pipeNum)){
+
+        if (pipeNum == 1){
+            // Read motion commands from transmitter
+            radio.read(&data, sizeof(TransmitterData));
+            lastRecvTime = millis();
+        }
+        if (pipeNum == 2){
+            // Read Commands from Ground Station
+            radio.read(&gs_data, sizeof(gs_data));
+            processGroundStationInput();
+        }
+
+
+    }
     else if (millis() - lastRecvTime > 1000){ 
         //If no commands received for over 1 sec
         //Reset data and Disarm the motors to stop them immediately
         resetRFData();
         motorsArmed = false;
     }
+
 }
 
 //Check if transmitter changed the pid constants from the last iteration
 bool pidConstsChanged_X(){
     //If changed => return true
-    if (K_P_x != data.K_P_x ||
-        K_I_x != data.K_I_x ||
-        K_D_x != data.K_D_x ) {
+    if (K_P_x != gs_data.K_P_x ||
+        K_I_x != gs_data.K_I_x ||
+        K_D_x != gs_data.K_D_x ) {
             return true;            
     } else {
         return false;
@@ -414,9 +470,9 @@ bool pidConstsChanged_X(){
 }
 bool pidConstsChanged_Y(){
     //If changed => return true
-    if (K_P_y != data.K_P_y ||
-        K_I_y != data.K_I_y ||
-        K_D_y != data.K_D_y ) {
+    if (K_P_y != gs_data.K_P_y ||
+        K_I_y != gs_data.K_I_y ||
+        K_D_y != gs_data.K_D_y ) {
             return true;            
     } else {
         return false;
@@ -450,4 +506,46 @@ void blinkLED(int blinkTimes, int on_mSecs, int off_mSecs){
         digitalWrite(LED_BUILTIN, LOW);
         delay(off_mSecs);
     }
+}
+
+// Function to interprete the commands sent from Ground Station
+void processGroundStationInput(){
+    if (gs_data.gs_command == 1) {
+        motorsArmed = true;
+    }
+    else if (gs_data.gs_command == 2){
+        motorsArmed = false;
+    }
+}
+
+// Stops listening and sends telemetry data back to Ground Station
+void sendTelemetryData(){
+
+    telemetry.c_time = c_time;
+    telemetry.angle_x = c_angle_x;
+    telemetry.angle_y = c_angle_y;
+    telemetry.connection_status = millis() - lastRecvTime < 100?1:0;
+    telemetry.throttle = data.throttle;
+    telemetry.yaw = data.yaw;
+    telemetry.pitch = data.pitch;
+    telemetry.roll = data.roll;
+    telemetry.motorsArmed = motorsArmed==true?1:0;
+
+
+    radio.stopListening();
+    radio.write(&telemetry, sizeof(telemetry));
+    radio.startListening();
+}
+
+/* Transmitter beeps 
+   eg. starting_beep(3, 200, 300, 1000)
+      => beeps with the buzzer for 3 times, 200 ms ON, 300 ms OFF, at 1000 Hz
+*/
+void starting_beep(int beepTimes, int on_time, int off_time, int tone_freq){
+  for (int i = 0; i < beepTimes; ++i){
+    tone(buzzer_pin, tone_freq);
+    delay(on_time);
+    noTone(buzzer_pin);
+    delay(off_time);
+  }
 }

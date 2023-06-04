@@ -1,0 +1,152 @@
+{
+    "frameEnd": "*/",
+    "frameStart": "/*",
+    "groups": [
+        {
+            "datasets": [
+                {
+                    "alarm": 0,
+                    "fft": false,
+                    "fftSamples": 1024,
+                    "graph": false,
+                    "led": false,
+                    "log": false,
+                    "max": 0,
+                    "min": 0,
+                    "title": "Time",
+                    "units": "sec",
+                    "value": "%1",
+                    "widget": ""
+                },
+                {
+                    "alarm": 0,
+                    "fft": false,
+                    "fftSamples": 1024,
+                    "graph": false,
+                    "led": true,
+                    "log": false,
+                    "max": 0,
+                    "min": 0,
+                    "title": "Transmitter Connected",
+                    "units": "",
+                    "value": "%8",
+                    "widget": ""
+                },
+                {
+                    "alarm": 0,
+                    "fft": false,
+                    "fftSamples": 1024,
+                    "graph": false,
+                    "led": true,
+                    "log": false,
+                    "max": 0,
+                    "min": 0,
+                    "title": "Motors Armed",
+                    "units": "",
+                    "value": "%9",
+                    "widget": ""
+                }
+            ],
+            "title": "Time",
+            "widget": ""
+        },
+        {
+            "datasets": [
+                {
+                    "alarm": 0,
+                    "fft": false,
+                    "fftSamples": 1024,
+                    "graph": true,
+                    "led": false,
+                    "log": false,
+                    "max": 0,
+                    "min": 0,
+                    "title": "Angle X",
+                    "units": "def",
+                    "value": "%2",
+                    "widget": ""
+                },
+                {
+                    "alarm": 0,
+                    "fft": false,
+                    "fftSamples": 1024,
+                    "graph": true,
+                    "led": false,
+                    "log": false,
+                    "max": 0,
+                    "min": 0,
+                    "title": "Angle Y",
+                    "units": "",
+                    "value": "%3",
+                    "widget": ""
+                }
+            ],
+            "title": "Angles",
+            "widget": "multiplot"
+        },
+        {
+            "datasets": [
+                {
+                    "alarm": 255,
+                    "fft": false,
+                    "fftSamples": 1024,
+                    "graph": false,
+                    "led": false,
+                    "log": false,
+                    "max": 255,
+                    "min": 0,
+                    "title": "Throttle",
+                    "units": "",
+                    "value": "%4",
+                    "widget": "bar"
+                },
+                {
+                    "alarm": 255,
+                    "fft": false,
+                    "fftSamples": 1024,
+                    "graph": false,
+                    "led": false,
+                    "log": false,
+                    "max": 255,
+                    "min": 0,
+                    "title": "Roll",
+                    "units": "",
+                    "value": "%5",
+                    "widget": "bar"
+                },
+                {
+                    "alarm": 255,
+                    "fft": false,
+                    "fftSamples": 1024,
+                    "graph": false,
+                    "led": false,
+                    "log": false,
+                    "max": 255,
+                    "min": 0,
+                    "title": "Pitch",
+                    "units": "",
+                    "value": "%6",
+                    "widget": "bar"
+                },
+                {
+                    "alarm": 255,
+                    "fft": false,
+                    "fftSamples": 1024,
+                    "graph": false,
+                    "led": false,
+                    "log": false,
+                    "max": 255,
+                    "min": 0,
+                    "title": "Yaw",
+                    "units": "",
+                    "value": "%7",
+                    "widget": "bar"
+                }
+            ],
+            "title": "Transmitter",
+            "widget": ""
+        }
+    ],
+    "separator": ",",
+    "title": "GroundStationDrone"
+}

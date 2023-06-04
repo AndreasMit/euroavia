@@ -10,22 +10,6 @@
 // const byte address[6] = "alex0"; 
 const uint64_t address = 0xE8E8F0F0E1LL; 
 
-// --- Controller Constants ----
-
-// X coordinate
-
-float K_P_x = 5; // P constant 
-float K_D_x = 0; // D constant 
-float K_I_x = 0; // I constant 
-
-// Y coordinate
-
-float K_P_y = 5; // P constant 
-float K_D_y = 0; // D constant 
-float K_I_y = 0; // I constant 
-
-// -----------------------------
-
 RF24 radio(6, 9); // CE , CSN pins
 
 //Arduino Pins
@@ -46,9 +30,6 @@ struct MyData {
   byte roll;
   byte AUX1;
   byte AUX2;
-
-  float K_P_x, K_I_x, K_D_x;
-  float K_P_y, K_I_y, K_D_y;
 };
 
 MyData data;
@@ -116,14 +97,6 @@ void resetRFData() {
     data.roll = 127;
     data.AUX1 = 0;
     data.AUX2 = 0;
-
-    data.K_P_x = K_P_x;
-    data.K_I_x = K_I_x;
-    data.K_D_x = K_D_x;
-
-    data.K_P_y = K_P_y;
-    data.K_I_y = K_I_y;
-    data.K_D_y = K_D_y;
 }
 
 //Sending status to Serial Port for Debugging purposes
