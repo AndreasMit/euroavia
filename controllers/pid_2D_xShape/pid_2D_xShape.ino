@@ -123,7 +123,7 @@ void setup(){
     pinMode(motor_d_esc, OUTPUT);
 
 
-    //MOTOR ARM
+    // ARM
     motor_a.attach(motor_a_esc);
     motor_b.attach(motor_b_esc);
     motor_c.attach(motor_c_esc);

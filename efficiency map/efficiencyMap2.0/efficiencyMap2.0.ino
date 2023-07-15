@@ -1,15 +1,18 @@
 #include <SPI.h>
 #include <SD.h>
 #include <HX711.h>
+#include <Servo.h>
 
 HX711 scale;
 File myFile;
+Servo motor;
 
 // Input Variables --------------
-const byte chipSelect = 10;
-const byte LOADCELL_DOUT_PIN = 2; 
-const byte LOADCELL_SCK_PIN = 13;
-const byte PITOT_PIN = A0;
+const byte chipSelect = 5;
+const byte LOADCELL_DOUT_PIN = A4; 
+const byte LOADCELL_SCK_PIN = A5;
+const byte PITOT_PIN = A7;
+const byte motor_pin = A3;
 
 double air_density = 1.204; // air density (kg/m3)
 double loadcell_scale = 2000.0;
@@ -35,9 +38,15 @@ void setup() {
   Serial.begin(9600);
   // while (!Serial.available());
 
+  motor.attach(motor_pin);
+  motor.writeMicroseconds(1000);
+  delay(500);
 
   // SD CARD BEGIN INITIALIZATION
   Serial.println("Should I initialize the SD Card?");
+
+  // Scale Init
+  scale.begin(LOADCELL_DOUT_PIN, LOADCELL_SCK_PIN);
 
   // Once 'y' is typed in the Serial monitor the program should go on...
   while (init_sd_input != 'y') {
@@ -88,7 +97,10 @@ void loop()
 {
   // If we have closed the measurements file then don't execute the rest of the while loop.
   // We have decided we don't want any more measurements.
-  if (close_input == 'y') return;
+  if (close_input == 'y'){
+    motor.writeMicroseconds(1000);
+    return;
+  } 
 
 
 
@@ -97,6 +109,7 @@ void loop()
     if (Serial.available())
         measurements_input = Serial.read();
   }
+  motor.writeMicroseconds(1400);
 
 
   while(Serial.available()) { //maybe this is not right
