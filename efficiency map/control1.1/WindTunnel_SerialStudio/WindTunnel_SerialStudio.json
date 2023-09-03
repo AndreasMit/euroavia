@@ -1,0 +1,90 @@
+{
+    "frameEnd": "*/",
+    "frameStart": "/*",
+    "groups": [
+        {
+            "datasets": [
+                {
+                    "alarm": 0,
+                    "fft": false,
+                    "fftSamples": 1024,
+                    "graph": false,
+                    "led": false,
+                    "log": false,
+                    "max": 0,
+                    "min": 0,
+                    "title": "Time",
+                    "units": "ms",
+                    "value": "%1",
+                    "widget": ""
+                },
+                {
+                    "alarm": 2000,
+                    "fft": false,
+                    "fftSamples": 1024,
+                    "graph": false,
+                    "led": false,
+                    "log": false,
+                    "max": 2000,
+                    "min": 1000,
+                    "title": "MotorSpeed",
+                    "units": "",
+                    "value": "%3",
+                    "widget": "gauge"
+                },
+                {
+                    "alarm": 0,
+                    "fft": false,
+                    "fftSamples": 1024,
+                    "graph": false,
+                    "led": false,
+                    "log": false,
+                    "max": 0,
+                    "min": 0,
+                    "title": "Loop Freq",
+                    "units": "Hz",
+                    "value": "%2",
+                    "widget": ""
+                }
+            ],
+            "title": "Datasets",
+            "widget": ""
+        },
+        {
+            "datasets": [
+                {
+                    "alarm": 0,
+                    "fft": false,
+                    "fftSamples": 1024,
+                    "graph": true,
+                    "led": false,
+                    "log": false,
+                    "max": 5000,
+                    "min": -100,
+                    "title": "Dynamometer",
+                    "units": "g",
+                    "value": "%4",
+                    "widget": ""
+                },
+                {
+                    "alarm": 0,
+                    "fft": false,
+                    "fftSamples": 1024,
+                    "graph": true,
+                    "led": false,
+                    "log": false,
+                    "max": 0,
+                    "min": 0,
+                    "title": "Pitot Air Speed",
+                    "units": "",
+                    "value": "%5",
+                    "widget": ""
+                }
+            ],
+            "title": "Measurements",
+            "widget": ""
+        }
+    ],
+    "separator": "",
+    "title": "Wind Tunnel Test"
+}
