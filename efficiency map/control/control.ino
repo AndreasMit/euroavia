@@ -15,6 +15,7 @@ struct WindTunnelData {
   char message[11];
   double dyn_force = 0;
   double pitot_airspeed = 0;
+  float loop_freq = 0;  // Frequency [Hz]
 };
 
 WindTunnelData data;
@@ -131,6 +132,8 @@ void loop(){
   // Sending to Serial Studio
   Serial.print("/*"); // Format for Serial Studio
   Serial.print(currentMillis);
+  Serial.print(",");
+  Serial.print(data.loop_freq);  //Frequency of Wind Tunnel Arduino Loop[Hz]
   Serial.print(",");
   Serial.print(command.motor_speed);
   Serial.print(",");

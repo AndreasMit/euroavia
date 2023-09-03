@@ -10,13 +10,16 @@ Servo motor;
 
 // Input Variables --------------
 const byte chipSelect = 10; //5
-const byte LOADCELL_DOUT_PIN = 2; //A4
-const byte LOADCELL_SCK_PIN = 13; //A5
+const byte LOADCELL_DOUT_PIN = A5;
+const byte LOADCELL_SCK_PIN = A4; 
 const byte PITOT_PIN = A0; //A7
 const byte motor_pin = A3;
 
 double air_density = 1.204; // air density (kg/m3)
 double loadcell_scale = 2000.0;
+
+#define SCALE_OFFSET (207762.2)
+#define SCALE_SLOPE (192.0143)
 // --------------------
 
 const uint64_t address_1 = 0xE8E8F0F0E2LL;
@@ -24,12 +27,13 @@ const uint64_t address_2 = 0xE8E8F0F0E3LL;
 RF24 radio(6, 9); // CE , CSN pins
 
 
-struct MyData {
+struct WindTunnelData {
   char message[11];
   double dyn_force = 0;
   double pitot_airspeed = 0;
+  float loop_freq = 0;  // Frequency [Hz]
 };
-MyData data;
+WindTunnelData data;
 
 struct Command {
   byte init_sd = 'n';
@@ -40,12 +44,15 @@ struct Command {
 };
 Command command;
 
-
+//Variables Needed
 double pitot_offset = 0;  // offset if there is flow when starting pitot
 const byte pitot_offset_times = 10; 
 
+unsigned long prev_time = 0;
 
 int file_offset = 0;  // This is the file offset that will be appended to the filename.
+
+
 
 void setup() {
   
@@ -59,6 +66,8 @@ void setup() {
 
   // Scale Init
   scale.begin(LOADCELL_DOUT_PIN, LOADCELL_SCK_PIN);
+  // scale.set_scale(192.0143);
+  // scale.set_offset(207762.2);
 
   // NRF BEGIN INITIALIZATION ----------------
   //Radio for nrf24
@@ -83,7 +92,7 @@ void setup() {
   radio.stopListening();
   strcpy(data.message, "I am ready");
   Serial.println("I am ready");
-  radio.write(&data, sizeof(MyData));
+  radioSendCommands(20);
 
   radio.startListening();
   recvCommand();
@@ -102,12 +111,12 @@ void setup() {
   if (!SD.begin()) {
     Serial.println("Initialization failed!"); //send message back too
     strcpy(data.message, "init fail");
-    radio.write(&data, sizeof(MyData));
+    radio.write(&data, sizeof(WindTunnelData));
     // return;
   }
   Serial.println("Initialization done."); //send message back
   strcpy(data.message, "init done");
-  radio.write(&data, sizeof(MyData));
+  radio.write(&data, sizeof(WindTunnelData));
 
 
   // sdOpenFile();
@@ -119,6 +128,10 @@ void setup() {
 
 void loop()
 {
+  //Store time
+  prev_time = millis();
+
+
   // If we have closed the measurements file then don't execute the rest of the while loop.
   // We have decided we don't want any more measurements.
   if (command.close_input == 'y'){
@@ -154,7 +167,7 @@ void loop()
     Serial.println("Waiting for command to start measurements");
     recvCommand();
   }
-  
+
   //Start motor 
   motor.writeMicroseconds(command.motor_speed); //TODO: Might take a while for the motor to reach desired RPM
 
@@ -168,23 +181,29 @@ void loop()
     data.pitot_airspeed = +sqrt((+10000.0*((v_read / 1023.0) - 0.5)) / air_density);
 
   // Reading Scale
-  // data.dyn_force = scale.get_units();
-  data.dyn_force = 20;
+  // data.dyn_force = scale.get_units(); //faster than 330 Hz
+  if (scale.is_ready()){
+    data.dyn_force = (scale.read() - SCALE_OFFSET)/(SCALE_SLOPE);
+  }
+
 
   // Sending to control station
-  Serial.print("/*"); // Format for Serial Studio
-  Serial.print(millis());
-  Serial.print(",");
-  Serial.print(command.motor_speed);
-  Serial.print(",");
-  Serial.print(data.dyn_force); // Reading minus tare and divided by calibration parameter
-  Serial.print(",");
-  Serial.print(data.pitot_airspeed);
-  Serial.print("*/\n");
+  // Serial.print("/*"); // Format for Serial Studio
+  // Serial.print(millis());
+  // Serial.print(",");
+  // Serial.print(command.motor_speed);
+  // Serial.print(",");
+  // Serial.print(data.dyn_force); // Reading minus tare and divided by calibration parameter
+  // Serial.print(",");
+  // Serial.print(data.pitot_airspeed);
+  // Serial.print("*/\n");
   Serial.flush();
 
+  //Storing Freq
+  data.loop_freq = (float)(1000/(millis() - prev_time)); // Frequency [Hz]
+  
   radio.stopListening();
-  radio.write(&data, sizeof(MyData));
+  radio.write(&data, sizeof(WindTunnelData));
 
   // Store data in SD card
   // firt we check that the file is open and working
@@ -247,4 +266,14 @@ void sdOpenFile(){
     Serial.println("Measurements will be saved in file: " + get_filename(file_offset));
   else 
     Serial.println("Something went wrong while trying to open the file" + get_filename(file_offset));
+}
+
+//Function to send the radio commands 
+//multiple times for redundancy if needed
+void radioSendCommands(int times){
+  radio.stopListening();
+  for (int i = 0; i < times; i++){
+    radio.write(&data, sizeof(WindTunnelData));
+    delay(10);
+  }
 }

@@ -29,8 +29,22 @@
                     "min": 1000,
                     "title": "MotorSpeed",
                     "units": "",
-                    "value": "%2",
+                    "value": "%3",
                     "widget": "gauge"
+                },
+                {
+                    "alarm": 0,
+                    "fft": false,
+                    "fftSamples": 1024,
+                    "graph": false,
+                    "led": false,
+                    "log": false,
+                    "max": 0,
+                    "min": 0,
+                    "title": "Loop Freq",
+                    "units": "Hz",
+                    "value": "%2",
+                    "widget": ""
                 }
             ],
             "title": "Datasets",
@@ -45,11 +59,11 @@
                     "graph": true,
                     "led": false,
                     "log": false,
-                    "max": 0,
-                    "min": 0,
+                    "max": 5000,
+                    "min": -100,
                     "title": "Dynamometer",
-                    "units": "",
-                    "value": "%3",
+                    "units": "g",
+                    "value": "%4",
                     "widget": ""
                 },
                 {
@@ -63,7 +77,7 @@
                     "min": 0,
                     "title": "Pitot Air Speed",
                     "units": "",
-                    "value": "%4",
+                    "value": "%5",
                     "widget": ""
                 }
             ],
