@@ -1,3 +1,5 @@
+#include <Wire.h>
+
 int rpm;
 unsigned long int prev_time;
 volatile float objects = 0;
@@ -29,8 +31,8 @@ void loop () {
   detachInterrupt(digitalPinToInterrupt(2));
   // time = 2000 but whatever...
   time = millis() - prev_time;
-  Serial.print("Objects detected: ");
-  Serial.println(objects);
+  // Serial.print("Objects detected: ");
+  // Serial.println(objects);
   rpm = objects/time * 60000;
   prev_time = millis();
   objects = 0;

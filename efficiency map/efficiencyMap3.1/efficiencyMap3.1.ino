@@ -25,8 +25,8 @@ Servo motor;
 const byte chipSelect = 10; //5
 const byte LOADCELL_DOUT_PIN = A5;
 const byte LOADCELL_SCK_PIN = A4; 
-const byte PITOT_PIN = A7;
-const byte motor_pin = A1;
+const byte PITOT_PIN = A7; //A0
+const byte motor_pin = A1;//A3
 
 float adc_voltage = 0.0;
 float R1 = 27900.0;
@@ -45,7 +45,7 @@ double loadcell_scale = 2000.0;
 
 const uint64_t address_1 = 0xE8E8F0F0E2LL;
 const uint64_t address_2 = 0xE8E8F0F0E3LL;
-RF24 radio(10, 8); // CE , CSN pins
+RF24 radio(6, 9); // CE , CSN pins
 
 
 struct WindTunnelData {
@@ -54,6 +54,7 @@ struct WindTunnelData {
   double pitot_airspeed = 0;
   float loop_freq = 0;  // Frequency [Hz]
   float voltage = 0;
+  float current = 0;
   float rpm = 0;
 };
 WindTunnelData data;
@@ -112,37 +113,38 @@ void setup() {
 //  // Start the I2C Bus as Slave on address 9 for rpm meter
 //  Wire.begin(9); //interfere with load cell??
 //  Wire.onReceive(receiveEvent);
-  Wire.begin();
+ 
+  // Wire.begin();
 
-  //send message that you are ready
-  radio.stopListening();
-  strcpy(data.message, "I am ready");
-  Serial.println("I am ready");
-  radioSendCommands(20);
+  // //send message that you are ready
+  // radio.stopListening();
+  // strcpy(data.message, "I am ready");
+  // Serial.println("I am ready");
+  // radioSendCommands(20);
 
-  radio.startListening();
-  recvCommand();
+  // radio.startListening();
+  // recvCommand();
 
-  // SD CARD INITIALIZATION ----------------
-  //waiting for command to initialize SD
-  Serial.println("waiting for command to initialize SD");
-  while(command.init_sd != 'y'){ 
-    recvCommand(); 
-  }
-  Serial.println("Initializing SD card..."); //send message back too
+  // // SD CARD INITIALIZATION ----------------
+  // //waiting for command to initialize SD
+  // Serial.println("waiting for command to initialize SD");
+  // while(command.init_sd != 'y'){ 
+  //   recvCommand(); 
+  // }
+  // Serial.println("Initializing SD card..."); //send message back too
   
-  delay(1000);
-  radio.stopListening();
+  // delay(1000);
+  // radio.stopListening();
 
-  if (!SD.begin()) {
-    Serial.println("Initialization failed!"); //send message back too
-    strcpy(data.message, "init fail");
-    radio.write(&data, sizeof(WindTunnelData));
-    // return;
-  }
-  Serial.println("Initialization done."); //send message back
-  strcpy(data.message, "init done");
-  radio.write(&data, sizeof(WindTunnelData));
+  // if (!SD.begin()) {
+  //   Serial.println("Initialization failed!"); //send message back too
+  //   strcpy(data.message, "init fail");
+  //   radio.write(&data, sizeof(WindTunnelData));
+  //   // return;
+  // }
+  // Serial.println("Initialization done."); //send message back
+  // strcpy(data.message, "init done");
+  // radio.write(&data, sizeof(WindTunnelData));
 
 
   // sdOpenFile();
@@ -223,12 +225,12 @@ void loop()
   data.voltage = adc_voltage*(R1+R2)/R2;
 
   //Reading rpm
-  Wire.requestFrom(8,4);//float rpm 4 bytes
-  while(Wire.available()){
-    data.rpm = Wire.read();
-  }
+  // Wire.requestFrom(8,4);//float rpm 4 bytes
+  // while(Wire.available()){
+  //   data.rpm = Wire.read();
+  // }
   
-  // Sending to control station
+  //Sending to control station
   // Serial.print("/*"); // Format for Serial Studio
   // Serial.print(millis());
   // Serial.print(",");
@@ -238,7 +240,7 @@ void loop()
   // Serial.print(",");
   // Serial.print(data.pitot_airspeed);
   // Serial.print("*/\n");
-  Serial.flush();
+  // Serial.flush();
 
   //Storing Freq
   data.loop_freq = (float)(1000/(millis() - prev_time)); // Frequency [Hz]

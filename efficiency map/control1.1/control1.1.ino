@@ -5,7 +5,7 @@
 
 const uint64_t address_1 = 0xE8E8F0F0E2LL; //Transmitting address
 const uint64_t address_2 = 0xE8E8F0F0E3LL; //Receiving address
-RF24 radio(9, 10); // CE , CSN pins
+RF24 radio(6, 9); // CE , CSN pins
 
 //Declaring the function manually cause i had trouble with the default value not being recognised
 void radioSendCommands(int times = 1);
@@ -17,6 +17,7 @@ struct WindTunnelData {
   double pitot_airspeed = 0;
   float loop_freq = 0;  // Frequency [Hz]
   float voltage = 0;
+  float current = 0;
   float rpm = 0;
 };
 WindTunnelData data;
@@ -39,7 +40,7 @@ unsigned long currentMillis = millis();
 void setup() {
 
   // Open serial communications and wait for port to open:
-  Serial.begin(9600); delay(1000);
+  Serial.begin(115200); delay(1000);
 
   // Getting time and date from user
   Serial.println("Enter time and date in the following format: 2023-08-30 14:25:45");
@@ -59,44 +60,44 @@ void setup() {
   recvData();
 
   //receive and print message
-  delay(1000); 
-  Serial.println("Waiting for wind tunnel arduino...");
-  while (strcmp(data.message, "I am ready") != 0){
-      recvData();
-  }
-  Serial.print("Responded: "); Serial.println(data.message);
-  resetData();
+  // delay(1000); 
+  // Serial.println("Waiting for wind tunnel arduino...");
+  // while (strcmp(data.message, "I am ready") != 0){
+  //     recvData();
+  // }
+  // Serial.print("Responded: "); Serial.println(data.message);
+  // resetData();
 
-  // SD CARD BEGIN INITIALIZATION ----------------
-  Serial.println("Should I initialize the SD Card?");  // Once 'y' is typed in the Serial monitor the program should go on...
+  // // SD CARD BEGIN INITIALIZATION ----------------
+  // Serial.println("Should I initialize the SD Card?");  // Once 'y' is typed in the Serial monitor the program should go on...
   
-  Serial.flush();
-  while (command.init_sd != 'y') {
-    while (Serial.available() == 0) {
-      // Wait for user input
-    }
+  // Serial.flush();
+  // while (command.init_sd != 'y') {
+  //   while (Serial.available() == 0) {
+  //     // Wait for user input
+  //   }
     
-    command.init_sd = Serial.read();
-    Serial.flush();
-  }
-  delay(1000);
+  //   command.init_sd = Serial.read();
+  //   Serial.flush();
+  // }
+  // delay(1000);
 
-  //send command with nrf - init sd
-  radioSendCommands();
+  // //send command with nrf - init sd
+  // radioSendCommands();
 
-  // printCommand();
+  // // printCommand();
   
-  radio.startListening();
-  recvData();
+  // radio.startListening();
+  // recvData();
 
-  Serial.println("Waiting for SD initialization...");
+  // Serial.println("Waiting for SD initialization...");
 
-  while (strcmp(data.message, "init done") != 0){ // data.message initialized somewhere?
-      recvData();
-      // Serial.println(data.message);
-  }
-  Serial.println("SD Card Initialized");
-  resetData();
+  // while (strcmp(data.message, "init done") != 0){ // data.message initialized somewhere?
+  //     recvData();
+  //     // Serial.println(data.message);
+  // }
+  // Serial.println("SD Card Initialized");
+  // resetData();
 
   //Asking user for motor speed input
   askForMotorSpeed();
@@ -124,7 +125,7 @@ void loop(){
 
 
   //send command to nrf
-  radioSendCommands();
+  radioSendCommands(2);
 
   //receive data from the receiver
   radio.startListening();
@@ -143,6 +144,8 @@ void loop(){
   Serial.print(data.pitot_airspeed);
   Serial.print(",");
   Serial.print(data.voltage);
+  Serial.print(",");
+  Serial.print(data.current);
   Serial.print(",");
   Serial.print(data.rpm);
   Serial.print("*/\n");
