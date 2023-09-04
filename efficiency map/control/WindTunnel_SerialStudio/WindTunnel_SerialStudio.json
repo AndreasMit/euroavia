@@ -56,7 +56,7 @@
                     "alarm": 0,
                     "fft": false,
                     "fftSamples": 1024,
-                    "graph": true,
+                    "graph": false,
                     "led": false,
                     "log": false,
                     "max": 5000,
@@ -67,21 +67,83 @@
                     "widget": ""
                 },
                 {
-                    "alarm": 1024,
+                    "alarm": 0,
                     "fft": false,
                     "fftSamples": 1024,
-                    "graph": true,
+                    "graph": false,
                     "led": false,
                     "log": false,
-                    "max": 1024,
+                    "max": 0,
                     "min": 0,
-                    "title": "Pitot Air Speed",
-                    "units": "ADC Raw (1024)",
+                    "title": "Rotation",
+                    "units": "RPM",
                     "value": "%5",
                     "widget": ""
                 }
             ],
             "title": "Measurements",
+            "widget": ""
+        },
+        {
+            "datasets": [
+                {
+                    "alarm": 0,
+                    "fft": false,
+                    "fftSamples": 1024,
+                    "graph": false,
+                    "led": false,
+                    "log": false,
+                    "max": 0,
+                    "min": 0,
+                    "title": "Pitot Raw",
+                    "units": "ADC (1024)",
+                    "value": "%6",
+                    "widget": ""
+                },
+                {
+                    "alarm": 0,
+                    "fft": false,
+                    "fftSamples": 1024,
+                    "graph": false,
+                    "led": false,
+                    "log": false,
+                    "max": 0,
+                    "min": 0,
+                    "title": "Pitot Pressure",
+                    "units": "Pa",
+                    "value": "%8",
+                    "widget": ""
+                },
+                {
+                    "alarm": 0,
+                    "fft": false,
+                    "fftSamples": 1024,
+                    "graph": false,
+                    "led": false,
+                    "log": false,
+                    "max": 0,
+                    "min": 0,
+                    "title": "Pitot Airspeed",
+                    "units": "m/s",
+                    "value": "%9",
+                    "widget": ""
+                },
+                {
+                    "alarm": 0,
+                    "fft": false,
+                    "fftSamples": 1024,
+                    "graph": false,
+                    "led": false,
+                    "log": false,
+                    "max": 0,
+                    "min": 0,
+                    "title": "Pitot Voltage",
+                    "units": "Volts",
+                    "value": "%7",
+                    "widget": ""
+                }
+            ],
+            "title": "Pitot",
             "widget": ""
         }
     ],
