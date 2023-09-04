@@ -4,18 +4,18 @@
 #include <SPI.h>
 
 const uint64_t address_1 = 0xE8E8F0F0E2LL; //Transmitting address
-const uint64_t address_2 = 0xE8E8F0F0E3LL; //Receiving address
+const uint64_t address_2 = 0xA8E2F2E0F3LL; //Receiving address
 RF24 radio(6, 9); // CE , CSN pins
 
 //Declaring the function manually cause i had trouble with the default value not being recognised
 void radioSendCommands(int times = 1);
 
 // Struct to hold the measurements received from the wind tunnel
-struct WindTunnelData {
-  char message[11];
-  double dyn_force = 0;
-  double pitot_airspeed = 0;
-  float loop_freq = 0;  // Frequency [Hz]
+struct WindTunnelData { //up to 32 bytes
+  char message[11];  //11 bytes
+  double dyn_force = 0;  //4 bytes
+  double pitot_airspeed = 0; //4 bytes
+  unsigned long time_ms = 0; //4 bytes
 };
 
 WindTunnelData data;
@@ -33,6 +33,8 @@ Command command;
 //Variables needed
 String date_time = "";
 unsigned long currentMillis = millis();
+unsigned long prev_received_time = 0;
+float wt_loop_freq = 0;  //wind tunnel arduino loop freq
 
 
 void setup() {
@@ -40,13 +42,18 @@ void setup() {
   // Open serial communications and wait for port to open:
   Serial.begin(9600); delay(1000);
 
+  //Checking
+  Serial.print("Size of WindTunnelData struct: ");
+  Serial.print(sizeof(WindTunnelData));
+  Serial.println(" bytes (<=32?)");
+
   // Getting time and date from user
   Serial.println("Enter time and date in the following format: 2023-08-30 14:25:45");
   readDateTimeFromSerial();
 
   // NRF BEGIN INITIALIZATION ----------------
   radio.begin();
-  radio.setAutoAck(false);
+  radio.setAutoAck(true);
   radio.setDataRate(RF24_250KBPS); // Both endpoints must have this set the same
   radio.openReadingPipe(1, address_2); //set receiving address
   radio.openWritingPipe(address_1);
@@ -81,7 +88,7 @@ void setup() {
   delay(1000);
 
   //send command with nrf - init sd
-  radioSendCommands();
+  radioSendCommands(20);
 
   // printCommand();
   
@@ -106,9 +113,6 @@ void setup() {
 
 void loop(){
 
-  //Get time from start
-  currentMillis = millis();
-  
   // If 'y' is typed in the Serial monitor then we should start getting measurements...
   Serial.flush();
   while(command.measurements_input != 'y') {
@@ -129,11 +133,14 @@ void loop(){
   radio.startListening();
   recvData();
 
+  //Storing Freq
+  wt_loop_freq = (float)(1000/(data.time_ms - prev_received_time)); // Frequency [Hz]
+
   // Sending to Serial Studio
   Serial.print("/*"); // Format for Serial Studio
-  Serial.print(currentMillis);
+  Serial.print(data.time_ms);
   Serial.print(",");
-  Serial.print(data.loop_freq);  //Frequency of Wind Tunnel Arduino Loop[Hz]
+  Serial.print(wt_loop_freq);  //Frequency of Wind Tunnel Arduino Loop[Hz]
   Serial.print(",");
   Serial.print(command.motor_speed);
   Serial.print(",");
@@ -141,6 +148,9 @@ void loop(){
   Serial.print(",");
   Serial.print(data.pitot_airspeed);
   Serial.print("*/\n");
+
+  //Store time
+  prev_received_time = data.time_ms;
 
 
   //Close measurements?

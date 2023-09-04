@@ -67,16 +67,16 @@
                     "widget": ""
                 },
                 {
-                    "alarm": 0,
+                    "alarm": 1024,
                     "fft": false,
                     "fftSamples": 1024,
                     "graph": true,
                     "led": false,
                     "log": false,
-                    "max": 0,
+                    "max": 1024,
                     "min": 0,
                     "title": "Pitot Air Speed",
-                    "units": "",
+                    "units": "ADC Raw (1024)",
                     "value": "%5",
                     "widget": ""
                 }

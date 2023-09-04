@@ -12,10 +12,12 @@ Servo motor;
 const byte chipSelect = 10; //5
 const byte LOADCELL_DOUT_PIN = A5;
 const byte LOADCELL_SCK_PIN = A4; 
-const byte PITOT_PIN = A0; //A7
+const byte PITOT_PIN = A7;
 const byte motor_pin = A3;
 
-double air_density = 1.204; // air density (kg/m3)
+// double air_density = 1.204; // air density (kg/m3)
+const byte pitot_offset_times = 10; // how many times to test for offset at the beginning of the code
+const byte pitot_readings_per_loop = 10;
 double loadcell_scale = 2000.0;
 
 #define SCALE_OFFSET (207762.2)
@@ -23,15 +25,15 @@ double loadcell_scale = 2000.0;
 // --------------------
 
 const uint64_t address_1 = 0xE8E8F0F0E2LL;
-const uint64_t address_2 = 0xE8E8F0F0E3LL;
+const uint64_t address_2 = 0xA8E2F2E0F3LL;
 RF24 radio(6, 9); // CE , CSN pins
 
 
-struct WindTunnelData {
-  char message[11];
-  double dyn_force = 0;
-  double pitot_airspeed = 0;
-  float loop_freq = 0;  // Frequency [Hz]
+struct WindTunnelData { //up to 32 bytes
+  char message[11];  //11 bytes
+  double dyn_force = 0;  //4 bytes
+  double pitot_airspeed = 0; //4 bytes
+  unsigned long time_ms = 0; //4 bytes
 };
 WindTunnelData data;
 
@@ -46,7 +48,6 @@ Command command;
 
 //Variables Needed
 double pitot_offset = 0;  // offset if there is flow when starting pitot
-const byte pitot_offset_times = 10; 
 
 unsigned long prev_time = 0;
 
@@ -72,7 +73,7 @@ void setup() {
   // NRF BEGIN INITIALIZATION ----------------
   //Radio for nrf24
   radio.begin();
-  radio.setAutoAck(false);
+  radio.setAutoAck(true);
   radio.setDataRate(RF24_250KBPS); // Both endpoints must have this set the same
   radio.openReadingPipe(1, address_1); //set receiving address
   radio.openWritingPipe(address_2);
@@ -93,6 +94,7 @@ void setup() {
   strcpy(data.message, "I am ready");
   Serial.println("I am ready");
   radioSendCommands(20);
+  delay(1000);
 
   radio.startListening();
   recvCommand();
@@ -112,12 +114,13 @@ void setup() {
     Serial.println("Initialization failed!"); //send message back too
     strcpy(data.message, "init fail");
     radio.write(&data, sizeof(WindTunnelData));
+    delay(1000);
     // return;
   }
   Serial.println("Initialization done."); //send message back
   strcpy(data.message, "init done");
   radio.write(&data, sizeof(WindTunnelData));
-
+  delay(200);
 
   // sdOpenFile();
   // SD CARD END INITIALIZATION
@@ -130,6 +133,7 @@ void loop()
 {
   //Store time
   prev_time = millis();
+  data.time_ms = prev_time;
 
 
   // If we have closed the measurements file then don't execute the rest of the while loop.
@@ -172,13 +176,17 @@ void loop()
   motor.writeMicroseconds(command.motor_speed); //TODO: Might take a while for the motor to reach desired RPM
 
   // Reading pitot
-  double v_read = analogRead(PITOT_PIN) - pitot_offset; 
+  double v_read = 0; 
+  for (int i = 0; i < pitot_readings_per_loop; i++){
+    v_read += analogRead(PITOT_PIN) - pitot_offset;
+  }
+  data.pitot_airspeed = v_read/pitot_readings_per_loop;
 
   // if it reads below 512 we need to equate to a negative velocity
-  if (v_read < 512)
-    data.pitot_airspeed = -sqrt((-10000.0*((v_read / 1023.0) - 0.5)) / air_density); //maybe we could simplify these operations
-  else
-    data.pitot_airspeed = +sqrt((+10000.0*((v_read / 1023.0) - 0.5)) / air_density);
+  // if (v_read < 512)
+  //   data.pitot_airspeed = -sqrt((-10000.0*((v_read / 1023.0) - 0.5)) / air_density); //maybe we could simplify these operations
+  // else
+  //   data.pitot_airspeed = +sqrt((+10000.0*((v_read / 1023.0) - 0.5)) / air_density);
 
   // Reading Scale
   // data.dyn_force = scale.get_units(); //faster than 330 Hz
@@ -199,8 +207,6 @@ void loop()
   // Serial.print("*/\n");
   Serial.flush();
 
-  //Storing Freq
-  data.loop_freq = (float)(1000/(millis() - prev_time)); // Frequency [Hz]
   
   radio.stopListening();
   radio.write(&data, sizeof(WindTunnelData));
