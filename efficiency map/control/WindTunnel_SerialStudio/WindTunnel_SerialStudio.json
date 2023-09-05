@@ -67,17 +67,31 @@
                     "widget": ""
                 },
                 {
-                    "alarm": 0,
+                    "alarm": 13000,
                     "fft": false,
                     "fftSamples": 1024,
-                    "graph": false,
+                    "graph": true,
                     "led": false,
                     "log": false,
-                    "max": 0,
+                    "max": 13000,
                     "min": 0,
                     "title": "Rotation",
                     "units": "RPM",
                     "value": "%5",
+                    "widget": ""
+                },
+                {
+                    "alarm": 0,
+                    "fft": false,
+                    "fftSamples": 1024,
+                    "graph": false,
+                    "led": true,
+                    "log": false,
+                    "max": 0,
+                    "min": 0,
+                    "title": "RPM Flag",
+                    "units": "",
+                    "value": "%10",
                     "widget": ""
                 }
             ],
@@ -144,6 +158,26 @@
                 }
             ],
             "title": "Pitot",
+            "widget": ""
+        },
+        {
+            "datasets": [
+                {
+                    "alarm": 0,
+                    "fft": false,
+                    "fftSamples": 1024,
+                    "graph": false,
+                    "led": false,
+                    "log": false,
+                    "max": 0,
+                    "min": 0,
+                    "title": "Voltage",
+                    "units": "Volts",
+                    "value": "%11",
+                    "widget": ""
+                }
+            ],
+            "title": "Battery",
             "widget": ""
         }
     ],
