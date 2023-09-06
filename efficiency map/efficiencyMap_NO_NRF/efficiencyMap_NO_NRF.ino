@@ -9,8 +9,8 @@ Servo motor;
 
 // Input Variables --------------
 const byte chipSelect = 5;
-const byte LOADCELL_DOUT_PIN = A5;
-const byte LOADCELL_SCK_PIN = A4; 
+const byte LOADCELL_DOUT_PIN = A4;
+const byte LOADCELL_SCK_PIN = A5; 
 const byte PITOT_PIN = A2;
 const byte motor_pin = A3;
 
@@ -139,7 +139,7 @@ void loop(){
 
 	//RPM Measurement
 	if (rpm_flag == 1){
-		startRPMMeasurements(rpm_flag);
+		startRPMMeasurements();
 	}
 	rpm_flag = 0;
 
@@ -178,6 +178,9 @@ void loop(){
 	// Sending to Serial Studio
 	serialStudioPrint();
 
+	// Store data in SD card
+	// storeDataSD();
+
 
 	//Close measurements?
 	if(Serial.available()) { 
@@ -196,6 +199,7 @@ void loop(){
 
 			// myFile.close();
 			// Serial.println("File: " + get_filename(file_offset) + " closed. Have fun :)");
+
 			Serial.println("File Closed");
 
 
@@ -341,7 +345,7 @@ void count_rpm() {
   ++objects;
 }
 
-void startRPMMeasurements(int rpm_flag){
+void startRPMMeasurements(){
 	unsigned long started_time = millis();
 	while (millis() - started_time < RPM_MEASURE_TIME){
 		delay(1500);
@@ -354,7 +358,6 @@ void startRPMMeasurements(int rpm_flag){
 	  serialStudioPrint();
 	}
 	delay(500);
-	rpm_flag = 0;
 }
 
 void serialStudioPrint(){
@@ -381,4 +384,38 @@ void serialStudioPrint(){
 	Serial.print(",");
 	Serial.print(battery_voltage);
 	Serial.print("*/\n");
+}
+
+void storeDataSD(){
+	// Store data in SD card
+  // firt we check that the file is open and working
+
+  if (myFile) {
+    myFile.print("/*"); // Format for Serial Studio
+		myFile.print(millis());
+		myFile.print(",");
+		myFile.print(wt_loop_freq);  //Frequency of Wind Tunnel Arduino Loop[Hz]
+		myFile.print(",");
+		myFile.print(motor_speed);
+		myFile.print(",");
+		myFile.print(dyn_force); // Reading minus tare and divided by calibration parameter
+		myFile.print(",");
+		myFile.print(rpm);
+		myFile.print(",");
+		myFile.print(pitot_adc_raw);
+		myFile.print(",");
+		myFile.print(pitot_voltage);
+		myFile.print(",");
+		myFile.print(pitot_pressure);
+		myFile.print(",");
+		myFile.print(pitot_airspeed);
+		myFile.print(",");
+		myFile.print(rpm_flag?1:0);
+		myFile.print(",");
+		myFile.print(battery_voltage);
+		myFile.print("*/\n");
+  } else {
+    Serial.println("There seems to be an error with the SD File" + get_filename(file_offset));
+  }
+
 }
