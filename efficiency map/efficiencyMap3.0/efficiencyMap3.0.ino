@@ -175,7 +175,11 @@ void loop()
   //Start motor 
   motor.writeMicroseconds(command.motor_speed); //TODO: Might take a while for the motor to reach desired RPM
 
-  // Reading pitot
+  // Reading pitotbvgbgf+9..
+
+
+
+  
   double v_read = 0; 
   for (int i = 0; i < pitot_readings_per_loop; i++){
     v_read += analogRead(PITOT_PIN) - pitot_offset;

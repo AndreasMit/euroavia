@@ -22,7 +22,7 @@
                     "alarm": 2000,
                     "fft": false,
                     "fftSamples": 1024,
-                    "graph": false,
+                    "graph": true,
                     "led": false,
                     "log": false,
                     "max": 2000,
@@ -56,11 +56,11 @@
                     "alarm": 0,
                     "fft": false,
                     "fftSamples": 1024,
-                    "graph": false,
+                    "graph": true,
                     "led": false,
                     "log": false,
                     "max": 5000,
-                    "min": -100,
+                    "min": -400,
                     "title": "Dynamometer",
                     "units": "g",
                     "value": "%4",
@@ -92,6 +92,20 @@
                     "title": "RPM Flag",
                     "units": "",
                     "value": "%10",
+                    "widget": ""
+                },
+                {
+                    "alarm": 0,
+                    "fft": false,
+                    "fftSamples": 1024,
+                    "graph": false,
+                    "led": false,
+                    "log": false,
+                    "max": 0,
+                    "min": 0,
+                    "title": "Motor Time in speed",
+                    "units": "",
+                    "value": "%13",
                     "widget": ""
                 }
             ],
@@ -155,9 +169,57 @@
                     "units": "Volts",
                     "value": "%7",
                     "widget": ""
+                },
+                {
+                    "alarm": 0,
+                    "fft": false,
+                    "fftSamples": 1024,
+                    "graph": false,
+                    "led": false,
+                    "log": false,
+                    "max": 0,
+                    "min": 0,
+                    "title": "Air Density",
+                    "units": "kg / m^3",
+                    "value": "%14",
+                    "widget": ""
                 }
             ],
             "title": "Pitot",
+            "widget": ""
+        },
+        {
+            "datasets": [
+                {
+                    "alarm": 13,
+                    "fft": false,
+                    "fftSamples": 1024,
+                    "graph": true,
+                    "led": false,
+                    "log": false,
+                    "max": 12.5,
+                    "min": 10,
+                    "title": "Voltage",
+                    "units": "Volts",
+                    "value": "%11",
+                    "widget": ""
+                },
+                {
+                    "alarm": 60,
+                    "fft": false,
+                    "fftSamples": 1024,
+                    "graph": true,
+                    "led": false,
+                    "log": false,
+                    "max": 60,
+                    "min": -4,
+                    "title": "Current",
+                    "units": "",
+                    "value": "%12",
+                    "widget": ""
+                }
+            ],
+            "title": "Battery",
             "widget": ""
         },
         {
@@ -171,13 +233,55 @@
                     "log": false,
                     "max": 0,
                     "min": 0,
-                    "title": "Voltage",
-                    "units": "Volts",
-                    "value": "%11",
+                    "title": "Airspeed From WT Pitot",
+                    "units": "m/s",
+                    "value": "%18",
+                    "widget": ""
+                },
+                {
+                    "alarm": 0,
+                    "fft": false,
+                    "fftSamples": 1024,
+                    "graph": false,
+                    "led": false,
+                    "log": false,
+                    "max": 0,
+                    "min": 0,
+                    "title": "Room Temperature",
+                    "units": "oC",
+                    "value": "%15",
+                    "widget": ""
+                },
+                {
+                    "alarm": 0,
+                    "fft": false,
+                    "fftSamples": 1024,
+                    "graph": false,
+                    "led": false,
+                    "log": false,
+                    "max": 0,
+                    "min": 0,
+                    "title": "Barometric Pressure",
+                    "units": "hPa",
+                    "value": "%16",
+                    "widget": ""
+                },
+                {
+                    "alarm": 0,
+                    "fft": false,
+                    "fftSamples": 1024,
+                    "graph": false,
+                    "led": false,
+                    "log": false,
+                    "max": 0,
+                    "min": 0,
+                    "title": "WT Pitot Delta P",
+                    "units": "Pa",
+                    "value": "%17",
                     "widget": ""
                 }
             ],
-            "title": "Battery",
+            "title": "Environment",
             "widget": ""
         }
     ],

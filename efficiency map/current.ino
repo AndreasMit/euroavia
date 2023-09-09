@@ -1,12 +1,17 @@
 #include <Adafruit_ADS1X15.h>
+#include <Servo.h>
 
-//Adafruit_ADS1115 ads;  /* Use this for the 16-bit version */
-Adafruit_ADS1015 ads;     /* Use this for the 12-bit version */
+Servo motor;
+Adafruit_ADS1115 ads;  /* Use this for the 16-bit version */
+// Adafruit_ADS1015 ads;     /* Use this for the 12-bit version */
 
 void setup(void)
 {
   Serial.begin(9600);
   Serial.println("Hello!");
+
+  motor.attach(A3);
+
 
   Serial.println("Getting single-ended readings from AIN0..3");
   Serial.println("ADC Range: +/- 6.144V (1 bit = 3mV/ADS1015, 0.1875mV/ADS1115)");
@@ -26,32 +31,35 @@ void setup(void)
 
   if (!ads.begin()) {
     Serial.println("Failed to initialize ADS.");
-    while (1);
+    // while (1);
   }
 }
 
 void loop(void)
 {
-  int16_t adc0, adc1, adc2, adc3;
-  double volts0, volts1, volts2, volts3, current;
 
-  // adc0 = ads.readADC_SingleEnded(0);
-  adc1 = ads.readADC_SingleEnded(1);
+  // motor.writeMicroseconds(1500);
+  int16_t adc0, adc1, adc2, adc3, adc_dif;
+  double volts0, volts1, volts2, volts3, current, volts;
+
+  // adc0 = ads.readADC_SingleEnded(1);
+  adc_dif = ads.readADC_Differential_0_1();
+  // adc1 = ads.readADC_SingleEnded(1);
   // adc2 = ads.readADC_SingleEnded(2);
   // adc3 = ads.readADC_SingleEnded(3);
 
   // volts0 = ads.computeVolts(adc0);
   // counts = adc1;
   // fsRange = 0.256f;
-  volts1 = adc1 * (0.256f / (32768 >> 0));
+  // volts1 = adc_dif * (0.256f / (32768 >> 0));
   // current = volts1/0.00185;
-  current = volts1 * 50*16/0.075;
-  Serial.println(current);
-  // volts2 = ads.computeVolts(adc2);
+  // Serial.println(current);
+  volts = ads.computeVolts(adc_dif);
+  current = volts * 50/0.075;
   // volts3 = ads.computeVolts(adc3);
 
-  // Serial.println("-----------------------------------------------------------");
-  // // Serial.print("AIN0: "); Serial.print(adc0); Serial.print("  "); Serial.print(volts0); Serial.println("V");
+  Serial.println("-----------------------------------------------------------");
+  Serial.print("AIN0: "); Serial.print(adc0); Serial.print("  "); Serial.print(volts*1000); Serial.print("mV"), Serial.print(current); Serial.println("A");;
   // Serial.print("AIN1: "); Serial.print(adc1); Serial.print("  "); Serial.print(volts1); Serial.println("V");
   // Serial.print("AIN2: "); Serial.print(adc2); Serial.print("  "); Serial.print(volts2); Serial.println("V");
   // Serial.print("AIN3: "); Serial.print(adc3); Serial.print("  "); Serial.print(volts3); Serial.println("V");
