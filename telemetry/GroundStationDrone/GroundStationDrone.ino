@@ -11,20 +11,46 @@ const uint64_t drone_address = 0xF0F0F0F0D2LL; // Ground Station NRF Address
 
 RF24 radio(6, 9); //CE - CSN
 
+/*
+    Struct size <= 32 bytes
+        byte    : 1 byte    [0  : 255]
+        int8_t  : 1 byte    [-128 : 127]
+        int     : 2 bytes
+        float   : 4 bytes
+        double  : 4 bytes
+        unsigned long: 4 bytes
+*/
+/*
+  GPS status:
+    -1  -  init status
+    0   -  no signal
+    1   -  signal
+    2   -  timed out
+
+*/
 struct TelemetryData {
-    float c_time; //current time in millis()
+    unsigned long c_time; //current time in millis()
     
     float angle_x;
     float angle_y;
 
     //Transmitter Data
-    byte throttle;
-    byte yaw;
-    byte pitch;
-    byte roll;
+    // byte throttle;
+    // byte yaw;
+    // byte pitch;
+    // byte roll;
     byte connection_status; //connection with transmitter on the ground
 
     byte motorsArmed;
+
+    //GPS 
+    byte gps_status = -1;
+    float lat = 0; // latitude
+    float lng = 0; // longitude
+    float altitude;
+    // float speedGps; //[m/s]
+    // float courseAngle; //[deg]
+
 };
 TelemetryData telemetry;
 
@@ -48,6 +74,7 @@ float lastRecvTime = 0;
 
 void setup() {
     Serial.begin(9600);
+    Serial.print("Struct Size: "); Serial.println(sizeof(TelemetryData));
 
     resetRFData();
 
@@ -96,10 +123,10 @@ void resetRFData(){
     telemetry.angle_x = 0;
     telemetry.angle_y = 0;
     telemetry.connection_status = millis() - lastRecvTime < 100?1:0;
-    telemetry.throttle = 0;
-    telemetry.yaw = 0;
-    telemetry.pitch = 0;
-    telemetry.roll = 0;
+    // telemetry.throttle = 0;
+    // telemetry.yaw = 0;
+    // telemetry.pitch = 0;
+    // telemetry.roll = 0;
     telemetry.motorsArmed = 0;
 }
 
@@ -113,17 +140,29 @@ void serialPrintTelemetryData() {
     Serial.print(",");
     Serial.print(telemetry.angle_y); 
     Serial.print(",");
-    Serial.print(telemetry.throttle); 
-    Serial.print(",");
-    Serial.print(telemetry.roll); 
-    Serial.print(",");
-    Serial.print(telemetry.pitch); 
-    Serial.print(",");
-    Serial.print(telemetry.yaw); 
+    // Serial.print(telemetry.throttle); 
+    // Serial.print(",");
+    // Serial.print(telemetry.roll); 
+    // Serial.print(",");
+    // Serial.print(telemetry.pitch); 
+    // Serial.print(",");
+    // Serial.print(telemetry.yaw); 
     Serial.print(",");
     Serial.print(telemetry.connection_status); 
     Serial.print(",");
     Serial.print(telemetry.motorsArmed); 
+    Serial.print(",");
+    Serial.print(telemetry.lat); 
+    Serial.print(",");
+    Serial.print(telemetry.lng); 
+    Serial.print(",");
+    Serial.print(telemetry.altitude); 
+    Serial.print(",");
+    Serial.print(telemetry.gps_status); 
+    // Serial.print(",");
+    // Serial.print(telemetry.speedGps);
+    // Serial.print(",");
+    // Serial.print(telemetry.courseAngle);  
     
     Serial.println("*/");
 }

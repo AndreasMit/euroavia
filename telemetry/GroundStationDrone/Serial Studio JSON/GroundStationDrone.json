@@ -29,7 +29,7 @@
                     "min": 0,
                     "title": "Transmitter Connected",
                     "units": "",
-                    "value": "%8",
+                    "value": "%4",
                     "widget": ""
                 },
                 {
@@ -43,7 +43,7 @@
                     "min": 0,
                     "title": "Motors Armed",
                     "units": "",
-                    "value": "%9",
+                    "value": "%5",
                     "widget": ""
                 }
             ],
@@ -87,63 +87,69 @@
         {
             "datasets": [
                 {
-                    "alarm": 255,
+                    "alarm": 0,
                     "fft": false,
                     "fftSamples": 1024,
                     "graph": false,
                     "led": false,
                     "log": false,
-                    "max": 255,
+                    "max": 0,
                     "min": 0,
-                    "title": "Throttle",
-                    "units": "",
-                    "value": "%4",
-                    "widget": "bar"
-                },
-                {
-                    "alarm": 255,
-                    "fft": false,
-                    "fftSamples": 1024,
-                    "graph": false,
-                    "led": false,
-                    "log": false,
-                    "max": 255,
-                    "min": 0,
-                    "title": "Roll",
-                    "units": "",
-                    "value": "%5",
-                    "widget": "bar"
-                },
-                {
-                    "alarm": 255,
-                    "fft": false,
-                    "fftSamples": 1024,
-                    "graph": false,
-                    "led": false,
-                    "log": false,
-                    "max": 255,
-                    "min": 0,
-                    "title": "Pitch",
-                    "units": "",
+                    "title": "Latitude",
+                    "units": "°",
                     "value": "%6",
-                    "widget": "bar"
+                    "widget": "lat"
                 },
                 {
-                    "alarm": 255,
+                    "alarm": 0,
                     "fft": false,
                     "fftSamples": 1024,
                     "graph": false,
                     "led": false,
                     "log": false,
-                    "max": 255,
+                    "max": 0,
                     "min": 0,
-                    "title": "Yaw",
-                    "units": "",
+                    "title": "Longitude",
+                    "units": "°",
                     "value": "%7",
-                    "widget": "bar"
+                    "widget": "lon"
+                },
+                {
+                    "alarm": 0,
+                    "fft": false,
+                    "fftSamples": 1024,
+                    "graph": false,
+                    "led": false,
+                    "log": false,
+                    "max": 0,
+                    "min": 0,
+                    "title": "Altitude",
+                    "units": "m",
+                    "value": "%8",
+                    "widget": "alt"
                 }
             ],
-            "title": "Transmitter",
+            "title": "GPS",
+            "widget": "map"
+        },
+        {
+            "datasets": [
+                {
+                    "alarm": 0,
+                    "fft": false,
+                    "fftSamples": 1024,
+                    "graph": false,
+                    "led": false,
+                    "log": false,
+                    "max": 0,
+                    "min": 0,
+                    "title": "GPS status",
+                    "units": "",
+                    "value": "%9",
+                    "widget": ""
+                }
+            ],
+            "title": "GPS Extra",
             "widget": ""
         }
     ],

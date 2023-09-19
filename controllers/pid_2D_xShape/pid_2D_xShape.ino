@@ -4,6 +4,10 @@
 #include <SPI.h>
 #include <nRF24L01.h>
 #include <RF24.h>
+#include <TinyGPS++.h>
+
+// Create a TinyGPS++ object
+TinyGPSPlus gps;
 
 MPU6050 mpu6050(Wire, 0.02, 0.98); // Complementary filter coeffs [0.02 ACC, 0.98 GYRO]
 uint8_t pipeNum; // Variable to store the pipe number
@@ -53,20 +57,37 @@ struct TransmitterData {
 };
 TransmitterData data;
 
+/*
+  GPS status:
+    -1  -  init status
+    0   -  no signal
+    1   -  signal
+    2   -  timed out
+
+*/
 struct TelemetryData {
-    float c_time; //current time in millis()
+    unsigned long c_time; //current time in millis()
     
     float angle_x;
     float angle_y;
 
     //Transmitter Data
-    byte throttle;
-    byte yaw;
-    byte pitch;
-    byte roll;
+    // byte throttle;
+    // byte yaw;
+    // byte pitch;
+    // byte roll;
     byte connection_status; //connection with transmitter on the ground
 
     byte motorsArmed;
+
+    //GPS 
+    byte gps_status = -1;
+    float lat = 0; // latitude
+    float lng = 0; // longitude
+    float altitude;
+    // float speedGps; //[m/s]
+    // float courseAngle; //[deg]
+
 };
 TelemetryData telemetry;
 
@@ -99,6 +120,7 @@ float c_time; //current time
 float prev_time, elapsed_time;
 unsigned long lastRecvTime = 0; //last time we received commands from transmitter
 unsigned long lastArmedTime = 0; //last motors were armed
+unsigned long lastGpsAquiredTime = 0;
 
 float pid_p_x, pid_i_x, pid_d_x, PID_x;
 float pid_p_y, pid_i_y, pid_d_y, PID_y;
@@ -111,6 +133,8 @@ float c_angle_x, c_angle_y; //current angle (most recent measurement)
 
 bool motorsArmed = false;
 float desired_throttle = 0; //map(data.throttle, 0, 255, MIN_MOTOR_VAL, MAX_MOTOR_VAL)
+
+byte gps_status = -1;
 
 
 void setup(){
@@ -137,7 +161,7 @@ void setup(){
 
 
     // --------- Initialization ----------
-    //Serial
+    //Serial for GPS
     Serial.begin(9600);
     //I2C for mpu6050
     Wire.begin();
@@ -182,6 +206,23 @@ void loop(){
     //Reading sensor angle
     mpu6050.update();
     getAnglesFiltered(&c_angle_x, &c_angle_y);
+
+
+
+    //Reading GPS
+    if (Serial.available() > 0){
+        if (gps.encode(Serial.read())){
+            parseGPSdata();
+            lastGpsAquiredTime = millis();
+        }
+    }
+    // If 5 seconds pass and there are no characters coming in
+    // over the serial port, show a "No GPS detected" error
+    if (millis() - lastGpsAquiredTime > 5000 && gps.charsProcessed() < 10){
+        //Tell them "No GPS detected"
+        gps_status = 2;
+    }
+    telemetry.gps_status = gps_status;
 
 
     
@@ -274,7 +315,7 @@ void loop(){
 
 
     //Serial Monitor Data Output
-    serialPrintData();
+    // serialPrintData(); //Disconnect GPS before uncommenting
 
 
     //Keeping current error in memory
@@ -518,17 +559,17 @@ void processGroundStationInput(){
     }
 }
 
-// Stops listening and sends telemetry data back to Ground Station
+// Stops listening and sends telemetry data back toac Ground Station
 void sendTelemetryData(){
 
-    telemetry.c_time = c_time;
+    telemetry.c_time = millis();
     telemetry.angle_x = c_angle_x;
     telemetry.angle_y = c_angle_y;
     telemetry.connection_status = millis() - lastRecvTime < 100?1:0;
-    telemetry.throttle = data.throttle;
-    telemetry.yaw = data.yaw;
-    telemetry.pitch = data.pitch;
-    telemetry.roll = data.roll;
+    // telemetry.throttle = data.throttle;
+    // telemetry.yaw = data.yaw;
+    // telemetry.pitch = data.pitch;
+    // telemetry.roll = data.roll;
     telemetry.motorsArmed = motorsArmed==true?1:0;
 
 
@@ -548,4 +589,20 @@ void starting_beep(int beepTimes, int on_time, int off_time, int tone_freq){
     noTone(buzzer_pin);
     delay(off_time);
   }
+}
+
+// Save received gps data to my variables
+void parseGPSdata(){
+    if (gps.location.isValid()){
+        gps_status = 1;
+        telemetry.lat = gps.location.lat();
+        telemetry.lng = gps.location.lng();
+        telemetry.altitude = gps.altitude.meters();
+    } else {
+        gps_status = 0;
+    }
+    // if (gps.speed.isUpdated()){
+    //     telemetry.speedGps = gps.speed.mps();
+    //     telemetry.courseAngle = gps.course.deg();
+    // }
 }
