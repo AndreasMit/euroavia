@@ -2,12 +2,15 @@
 #include <MPU6050_tockn.h>
 #include <Wire.h>
 #include <SPI.h>
+#include <SD.h>
 #include <nRF24L01.h>
 #include <RF24.h>
 #include <TinyGPS++.h>
 
 // Create a TinyGPS++ object
 TinyGPSPlus gps;
+//SD card object
+File myFile;
 
 MPU6050 mpu6050(Wire, 0.02, 0.98); // Complementary filter coeffs [0.02 ACC, 0.98 GYRO]
 uint8_t pipeNum; // Variable to store the pipe number
@@ -24,11 +27,14 @@ const uint64_t GS_nrf_address = 0xF0F0F0F0D2LL; // Ground Station NRF Address
 #define MIN_MOTOR_VAL 1000
 #define MAX_MOTOR_VAL 1500 //Motor clamping saturation limit
 
+//Every 20secs we close and reopen the sd card to dump everything we have collected
+#define SD_REOPEN_TIME 20000
+
 //Motor pin numbers
-int motor_a_esc = A0; 
-int motor_b_esc = A1;
-int motor_c_esc = A2;
-int motor_d_esc = A3;
+const byte motor_a_esc = A0; 
+const byte motor_b_esc = A1;
+const byte motor_c_esc = A2;
+const byte motor_d_esc = A3;
 
 Servo motor_a; 
 Servo motor_b;
@@ -36,9 +42,16 @@ Servo motor_c;
 Servo motor_d;
 
 //Buzzer Pin
-int buzzer_pin = 7;
+const byte buzzer_pin = 7;
+
+//SD CS pin
+const byte SD_CS_pin = 10;
+
 
 RF24 radio(6, 9); // CE , CSN pins
+
+
+// ----------- Structs --------------------
 
 /*
     The sizeof this struct should not exceed 32 bytes
@@ -105,7 +118,10 @@ struct GroundStationData {
 };
 GroundStationData gs_data;
 
-//Variables
+
+
+// ---------------  Variables Needed ------------------
+
 float desired_angle_x = 0.0;
 float desired_angle_y = 0.0;
 
@@ -133,8 +149,11 @@ float c_angle_x, c_angle_y; //current angle (most recent measurement)
 
 bool motorsArmed = false;
 float desired_throttle = 0; //map(data.throttle, 0, 255, MIN_MOTOR_VAL, MAX_MOTOR_VAL)
-
-byte gps_status = -1;
+//SD
+int8_t file_offset = 0;  // This is the file offset that will be appended to the filename.
+char filename[20];
+unsigned long sd_last_opened_time = 0;
+bool sd_connected = false;
 
 
 void setup(){
@@ -163,9 +182,11 @@ void setup(){
     // --------- Initialization ----------
     //Serial for GPS
     Serial.begin(9600);
+
     //I2C for mpu6050
     Wire.begin();
     mpu6050.begin();
+    
     //Radio for nrf24
     radio.begin();
     radio.setAutoAck(false);
@@ -185,6 +206,9 @@ void setup(){
     //Calculating gyro offsets
     mpu6050.calcGyroOffsets(true); 
 
+    //SD card
+    sd_connected = SD.begin(SD_CS_pin);
+    sdOpenFile(0); // 0 -> open a new file
 
     //Start counting time in milliseconds
     c_time = millis();
@@ -193,6 +217,10 @@ void setup(){
     starting_beep(3, 200, 200, 1000); 
     delay(1000);
 }
+
+
+
+
 
 void loop(){
 
@@ -220,9 +248,8 @@ void loop(){
     // over the serial port, show a "No GPS detected" error
     if (millis() - lastGpsAquiredTime > 5000 && gps.charsProcessed() < 10){
         //Tell them "No GPS detected"
-        gps_status = 2;
+        telemetry.gps_status = 2;
     }
-    telemetry.gps_status = gps_status;
 
 
     
@@ -317,6 +344,18 @@ void loop(){
     //Serial Monitor Data Output
     // serialPrintData(); //Disconnect GPS before uncommenting
 
+    
+    //SD card 
+    if (sd_connected == true){
+        storeDataSD();
+        if (millis() - sd_last_opened_time > SD_REOPEN_TIME){
+            // Serial.println("Reopening");
+            sd_last_opened_time = millis();
+            closeSD();
+            delay(10);
+            sdOpenFile(1); // 1 -> reopen last saved file to continue writing
+        }    
+    }
 
     //Keeping current error in memory
     prev_error_x = error_x;
@@ -383,50 +422,62 @@ void serialPrintData(){
     // K_P_x(12), K_I_x(13), K_D_x(14)
     // K_P_y(15), K_I_y(16), K_D_y(17)
     // motorsArmed?(18), data.AUX1(19), data.AUX2(20)
+    // RC connection status(22),
+    // gps_status(23), gps_lat (24), gps_lng(25), gps_altitude (26)
 
-    Serial.print("/*");
+    Serial.print(F("/*"));
     Serial.print(millis()/1000); //number of [sec] since system started
-    Serial.print(",");
+    Serial.print(F(","));
     Serial.print(c_angle_x); 
-    Serial.print(",");
+    Serial.print(F(","));
     Serial.print(c_angle_y); 
-    Serial.print(","); 
+    Serial.print(F(",")); 
     Serial.print(motor_a_speed); 
-    Serial.print(",");
+    Serial.print(F(","));
     Serial.print(motor_b_speed); 
-    Serial.print(",");
+    Serial.print(F(","));
     Serial.print(motor_c_speed); 
-    Serial.print(",");
+    Serial.print(F(","));
     Serial.print(motor_d_speed); 
-    Serial.print(",");
+    Serial.print(F(","));
     Serial.print(PID_x); 
-    Serial.print(",");
+    Serial.print(F(","));
     Serial.print(PID_y);
-    Serial.print(",");
+    Serial.print(F(","));
     Serial.print(millis() - lastRecvTime < 100?1:0);
-    Serial.print(",");
+    Serial.print(F(","));
     Serial.print((flag_x==0 || flag_y==0)?1:0);
-    Serial.print(",");
+    Serial.print(F(","));
     Serial.print(K_P_x);
-    Serial.print(",");
+    Serial.print(F(","));
     Serial.print(K_I_x);
-    Serial.print(",");
+    Serial.print(F(","));
     Serial.print(K_D_x);
-    Serial.print(",");
+    Serial.print(F(","));
     Serial.print(K_P_y);
-    Serial.print(",");
+    Serial.print(F(","));
     Serial.print(K_I_y);
-    Serial.print(",");
+    Serial.print(F(","));
     Serial.print(K_D_y);
-    Serial.print(",");
+    Serial.print(F(","));
     Serial.print(motorsArmed==true?1:0);
-    Serial.print(",");
+    Serial.print(F(","));
     Serial.print(data.AUX1);
-    Serial.print(",");
+    Serial.print(F(","));
     Serial.print(data.AUX2);
-    Serial.print(",");
+    Serial.print(F(","));
     Serial.print(1000 / elapsed_time); //Loop Frequency [Hz]
-    Serial.println("*/");
+    Serial.print(F(","));
+    Serial.print(telemetry.connection_status);
+    Serial.print(F(","));
+    Serial.print(telemetry.gps_status);
+    Serial.print(F(","));
+    Serial.print(telemetry.lat);
+    Serial.print(F(","));
+    Serial.print(telemetry.lng);
+    Serial.print(F(","));
+    Serial.print(telemetry.altitude);
+    Serial.println(F("*/"));
 }
 
 void integrators_anti_windup(){
@@ -594,15 +645,139 @@ void starting_beep(int beepTimes, int on_time, int off_time, int tone_freq){
 // Save received gps data to my variables
 void parseGPSdata(){
     if (gps.location.isValid()){
-        gps_status = 1;
+        telemetry.gps_status = 1;
         telemetry.lat = gps.location.lat();
         telemetry.lng = gps.location.lng();
         telemetry.altitude = gps.altitude.meters();
     } else {
-        gps_status = 0;
+        telemetry.gps_status = 0;
     }
     // if (gps.speed.isUpdated()){
     //     telemetry.speedGps = gps.speed.mps();
     //     telemetry.courseAngle = gps.course.deg();
     // }
 }
+
+//  ------------------  SD CARD  ------------------------------------------
+
+// This function sets the correct filename 
+// of the measurements file given a certain offset.
+void get_filename(int8_t file_offset, char* filename) {
+  sprintf(filename, "drone%d.csv", file_offset);
+}
+
+/*
+    If reopenLast = 1 -> try to open the last remembered filename
+*/
+void sdOpenFile(byte reopenLast){
+    if (reopenLast == 0){
+        // Find latest file offset for the filename  
+        get_filename(file_offset, filename);
+        while (SD.exists(filename)){
+            file_offset += 1;
+            get_filename(file_offset, filename);
+        }
+    }
+    // try opening the file...
+    get_filename(file_offset, filename);
+    myFile = SD.open(filename, FILE_WRITE);
+
+    // if (myFile){
+    //     Serial.print("Measurements will be saved in file: ");
+    //     Serial.println(filename);
+    // }
+    // else {
+    //     Serial.print("Something went wrong while trying to open the file ");
+    //     Serial.println(filename);
+    // }
+
+}
+
+void storeDataSD(){
+    // firt we check that the file is open and working
+    if (myFile) {
+        //ORDER:
+        // time(1), angle_x(2), angle_y(3), speed_a(4), speed_b(5), speed_c(6), speed_d(7), 
+        // PID_x(8), PID_y(9), Connection Lost?(10), Clamping?(11), loop_freq(21)[Hz]
+        // K_P_x(12), K_I_x(13), K_D_x(14)
+        // K_P_y(15), K_I_y(16), K_D_y(17)
+        // motorsArmed?(18), data.AUX1(19), data.AUX2(20)
+        // RC connection status(22),
+        // gps_status(23), gps_lat (24), gps_lng(25), gps_altitude(26)
+        // throttle(27), roll(28), pitch(29), yaw(30)
+
+        myFile.print("/*");
+        myFile.print(millis()/1000); //number of [sec] since system started
+        myFile.print(",");
+        myFile.print(c_angle_x); 
+        myFile.print(",");
+        myFile.print(c_angle_y); 
+        myFile.print(","); 
+        myFile.print(motor_a_speed); 
+        myFile.print(",");
+        myFile.print(motor_b_speed); 
+        myFile.print(",");
+        myFile.print(motor_c_speed); 
+        myFile.print(",");
+        myFile.print(motor_d_speed); 
+        myFile.print(",");
+        myFile.print(PID_x); 
+        myFile.print(",");
+        myFile.print(PID_y);
+        myFile.print(",");
+        myFile.print(millis() - lastRecvTime < 100?1:0);
+        myFile.print(",");
+        myFile.print((flag_x==0 || flag_y==0)?1:0);
+        myFile.print(",");
+        myFile.print(K_P_x);
+        myFile.print(",");
+        myFile.print(K_I_x);
+        myFile.print(",");
+        myFile.print(K_D_x);
+        myFile.print(",");
+        myFile.print(K_P_y);
+        myFile.print(",");
+        myFile.print(K_I_y);
+        myFile.print(",");
+        myFile.print(K_D_y);
+        myFile.print(",");
+        myFile.print(motorsArmed==true?1:0);
+        myFile.print(",");
+        myFile.print(data.AUX1);
+        myFile.print(",");
+        myFile.print(data.AUX2);
+        myFile.print(",");
+        myFile.print(1000 / elapsed_time); //Loop Frequency [Hz]
+        myFile.print(",");
+        myFile.print(telemetry.connection_status);
+        myFile.print(",");
+        myFile.print(telemetry.gps_status);
+        myFile.print(",");
+        myFile.print(telemetry.lat);
+        myFile.print(",");
+        myFile.print(telemetry.lng);
+        myFile.print(",");
+        myFile.print(telemetry.altitude);
+        myFile.print(",");
+        myFile.print(data.throttle);
+        myFile.print(",");
+        myFile.print(data.roll);
+        myFile.print(",");
+        myFile.print(data.pitch);
+        myFile.print(",");
+        myFile.print(data.yaw);
+        myFile.println("*/");
+    } 
+    // else {
+    //     Serial.println("There seems to be an error with the SD File" + get_filename(file_offset));
+    // }
+}
+
+void closeSD(){
+    myFile.close();
+    // get_filename(file_offset, filename);
+    // Serial.print("File: ");
+    // Serial.print(filename);
+    // Serial.println(" closed. Have fun :)");
+}
+
