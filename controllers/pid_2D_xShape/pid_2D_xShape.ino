@@ -534,7 +534,7 @@ void recvData(){
         }
         if (pipeNum == 2){
             // Read Commands from Ground Station
-            radio.read(&gs_data, sizeof(gs_data));
+            radio.read(&gs_data, sizeof(GroundStationData));
             processGroundStationInput();
         }
 
@@ -625,7 +625,7 @@ void sendTelemetryData(){
 
 
     radio.stopListening();
-    radio.write(&telemetry, sizeof(telemetry));
+    radio.write(&telemetry, sizeof(TelemetryData));
     radio.startListening();
 }
 

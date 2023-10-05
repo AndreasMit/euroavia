@@ -17,34 +17,6 @@
                     "units": "sec",
                     "value": "%1",
                     "widget": ""
-                },
-                {
-                    "alarm": 0,
-                    "fft": false,
-                    "fftSamples": 1024,
-                    "graph": false,
-                    "led": true,
-                    "log": false,
-                    "max": 0,
-                    "min": 0,
-                    "title": "Transmitter Connected",
-                    "units": "",
-                    "value": "%4",
-                    "widget": ""
-                },
-                {
-                    "alarm": 0,
-                    "fft": false,
-                    "fftSamples": 1024,
-                    "graph": false,
-                    "led": true,
-                    "log": false,
-                    "max": 0,
-                    "min": 0,
-                    "title": "Motors Armed",
-                    "units": "",
-                    "value": "%5",
-                    "widget": ""
                 }
             ],
             "title": "Time",
@@ -150,6 +122,40 @@
                 }
             ],
             "title": "GPS Extra",
+            "widget": ""
+        },
+        {
+            "datasets": [
+                {
+                    "alarm": 0,
+                    "fft": false,
+                    "fftSamples": 1024,
+                    "graph": false,
+                    "led": false,
+                    "log": false,
+                    "max": 0,
+                    "min": 0,
+                    "title": "Throttle",
+                    "units": "",
+                    "value": "%4",
+                    "widget": ""
+                },
+                {
+                    "alarm": 0,
+                    "fft": false,
+                    "fftSamples": 1024,
+                    "graph": false,
+                    "led": true,
+                    "log": false,
+                    "max": 0,
+                    "min": 0,
+                    "title": "Motors Armed",
+                    "units": "",
+                    "value": "%5",
+                    "widget": ""
+                }
+            ],
+            "title": "Motors",
             "widget": ""
         }
     ],

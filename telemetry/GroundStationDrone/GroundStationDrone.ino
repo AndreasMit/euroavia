@@ -34,14 +34,7 @@ struct TelemetryData {
     float angle_x;
     float angle_y;
 
-    //Transmitter Data
-    // byte throttle;
-    // byte yaw;
-    // byte pitch;
-    // byte roll;
-    byte connection_status; //connection with transmitter on the ground
-
-    byte motorsArmed;
+    // unsigned long loop_freq;
 
     //GPS 
     byte gps_status = -1;
@@ -50,6 +43,14 @@ struct TelemetryData {
     float altitude;
     // float speedGps; //[m/s]
     // float courseAngle; //[deg]
+
+    //Battery
+    double current = 0;
+    // double voltage = 0;
+
+    //Motors
+    byte motorsArmed = 0;
+    byte throttle;
 
 };
 TelemetryData telemetry;
@@ -63,8 +64,8 @@ TelemetryData telemetry;
 struct GroundStationData {
     int gs_command; //Number sent from ground to choose action 
 
-    float K_P_x, K_I_x, K_D_x;
-    float K_P_y, K_I_y, K_D_y;
+    // float K_P_x, K_I_x, K_D_x;
+    // float K_P_y, K_I_y, K_D_y;
 };
 GroundStationData gs_data;
 
@@ -122,7 +123,7 @@ void resetRFData(){
     telemetry.c_time = -1;
     telemetry.angle_x = 0;
     telemetry.angle_y = 0;
-    telemetry.connection_status = millis() - lastRecvTime < 100?1:0;
+    // telemetry.connection_status = millis() - lastRecvTime < 100?1:0;
     // telemetry.throttle = 0;
     // telemetry.yaw = 0;
     // telemetry.pitch = 0;
@@ -140,16 +141,16 @@ void serialPrintTelemetryData() {
     Serial.print(",");
     Serial.print(telemetry.angle_y); 
     Serial.print(",");
-    // Serial.print(telemetry.throttle); 
-    // Serial.print(",");
+    Serial.print(telemetry.throttle); 
+    Serial.print(",");
     // Serial.print(telemetry.roll); 
     // Serial.print(",");
     // Serial.print(telemetry.pitch); 
     // Serial.print(",");
     // Serial.print(telemetry.yaw); 
-    Serial.print(",");
-    Serial.print(telemetry.connection_status); 
-    Serial.print(",");
+    // Serial.print(",");
+    // Serial.print(telemetry.connection_status); 
+    // Serial.print(",");
     Serial.print(telemetry.motorsArmed); 
     Serial.print(",");
     Serial.print(telemetry.lat); 
@@ -195,12 +196,12 @@ void interpreteTerminalInput(String input){
     sscanf(input.c_str(), "%d,%d,%d,%d,%d,%d", &kpx, &kix, &kdx, &kpy, &kiy, &kdy);
 
 
-    gs_data.K_P_x = kpx;
-    gs_data.K_I_x = kix;
-    gs_data.K_D_x = kdx;
-    gs_data.K_P_y = kpy;
-    gs_data.K_I_y = kiy;
-    gs_data.K_D_y = kdy;
+    // gs_data.K_P_x = kpx;
+    // gs_data.K_I_x = kix;
+    // gs_data.K_D_x = kdx;
+    // gs_data.K_P_y = kpy;
+    // gs_data.K_I_y = kiy;
+    // gs_data.K_D_y = kdy;
 
     gs_data.gs_command = 0; //neutral position
 
