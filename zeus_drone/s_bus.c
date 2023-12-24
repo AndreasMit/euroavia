@@ -1,16 +1,14 @@
-#include "./s_bus.h";
+#include "./s_bus.h"
 #include "stdio.h"
 #include "stdlib.h"
 #include "string.h"
 #include "fcntl.h"
 #include <sys/types.h>
 #include "unistd.h"
-#include "termios.h"
+#include "asm/termbits.h"
+#include "sys/ioctl.h"
 
-
-
-
-uint8_t sbus_write(int sbusFile, const struct SBUSFrame *msg) {
+uint8_t sbus_write(const int sbusFile, const struct SBUSFrame *msg) {
 
 
     if (!sbusFile || !msg) {
@@ -85,22 +83,20 @@ uint8_t sbus_write(int sbusFile, const struct SBUSFrame *msg) {
 
 int sbus_open() {
 
-    int sbusFile = open(TTY_FILE_PATH, 0_WRONLY);
+    int sbusFile = open(SBUS_TTY_FILE, O_WRONLY);
     if (sbusFile == -1) {
-        perror("Error connecting to SBUS.")
-		exit(EXIT_FAILURE);
+        perror("Error connecting to SBUS.");
+	exit(EXIT_FAILURE);
     }
 
-    struct termios tty;
+    struct termios2 tty;
     memset(&tty, 0, sizeof(tty));
-    if (tcgetattr(sbusFile, &tty) != 0) {
+
+    if (ioctl(sbusFile, TCGETS2 ,&tty) < 0) {
         perror("Error: Can't get TTY File attributes");
         close(sbusFile);
         return SBUS_ERROR;
     }
-
-    // set output Baud Rate
-    cfsetospeed(&tty, SBUS_BAUD_RATE);
 
     // configure tty settings
     tty.c_cflag |= PARENB;
@@ -112,6 +108,17 @@ int sbus_open() {
     tty.c_lflag &= ~ECHO;    // do not echo
     tty.c_lflag &= ~ISIG;    // do not generate signals
     tty.c_oflag &= ~OFILL;  // no fill characters
+
+    // Baud rate
+    tty.c_cflag &= ~CBAUD;
+    tty.c_cflag |= BOTHER;
+    tty.c_ospeed = SBUS_BAUD_RATE;
+
+    if (ioctl(sbusFile, TCSETS2, &tty) < 0) {
+    	perror("Error setting baud rate.");
+	return SBUS_ERROR;
+    }
+
 
     return sbusFile;
 }
