@@ -6,7 +6,7 @@ int main() {
 
 	// initialize SBUSFrame struct
 	struct SBUSFrame msg;
-	initialize_sbus_msg(&msg);
+	initialize_sbus_frame(&msg);
 	printf("%s\n", "Hello World");
 	return 0;
 }

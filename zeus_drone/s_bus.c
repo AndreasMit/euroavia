@@ -123,16 +123,19 @@ int sbus_open() {
     return sbusFile;
 }
 
+void set_sbus_channel(struct SBUSFrame *msg, uint8_t CHANNEL_NO, int value) {
+    msg->channels[CHANNEL_NO] = value;
+}
 
-void clear_msg_channels(struct SBUSFrame *msg) {
+void clear_sbus_channels(struct SBUSFrame *msg) {
     memset(msg->channels, 0, sizeof(msg->channels));
 }
 
-uint8_t initialize_sbus_msg(struct SBUSFrame *msg) {
+uint8_t initialize_sbus_frame(struct SBUSFrame *msg) {
 
     msg->startByte = 0x0F;
 
-    memset(msg->channels, 0, sizeof(msg->channels));
+    clear_sbus_channels(msg);
 
     // make flagByte 0x00
     msg->flagByte = 0x00;
