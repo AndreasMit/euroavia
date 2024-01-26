@@ -25,42 +25,42 @@ uint8_t sbus_write(const int sbusFile, const struct SBUSFrame *msg) {
     buf[0] = msg->startByte;
 
     // Channels
-    buf[1] = (uint8_t)((msg->channels[0] & 0x07FF));
-    buf[2] = (uint8_t)((msg->channels[0] & 0x07FF) >> 8 |
-                        (msg->channels[1] & 0x07FF) << 3);
-    buf[3] = (uint8_t)((msg->channels[1] & 0x07FF) >> 5 |
-                        (msg->channels[2] & 0x07FF) << 6);
-    buf[4] = (uint8_t)((msg->channels[2] & 0x07FF) >> 2);
-    buf[5] = (uint8_t)((msg->channels[2] & 0x07FF) >> 10 |
-                        (msg->channels[3] & 0x07FF) << 1);
-    buf[6] = (uint8_t)((msg->channels[3] & 0x07FF) >> 7 |
-                        (msg->channels[4] & 0x07FF) << 4);
-    buf[7] = (uint8_t)((msg->channels[4] & 0x07FF) >> 4 |
-                        (msg->channels[5] & 0x07FF) << 7);
-    buf[8] = (uint8_t)((msg->channels[5] & 0x07FF) >> 1);
-    buf[9] = (uint8_t)((msg->channels[5] & 0x07FF) >> 9 |
-                        (msg->channels[6] & 0x07FF) << 2);
-    buf[10] = (uint8_t)((msg->channels[6] & 0x07FF) >> 6 |
-                        (msg->channels[7] & 0x07FF) << 5);
-    buf[11] = (uint8_t)((msg->channels[7] & 0x07FF) >> 3);
-    buf[12] = (uint8_t)((msg->channels[8] & 0x07FF));
-    buf[13] = (uint8_t)((msg->channels[8] & 0x07FF) >> 8 |
-                        (msg->channels[9] & 0x07FF) << 3);
-    buf[14] = (uint8_t)((msg->channels[9] & 0x07FF) >> 5 |
-                        (msg->channels[10] & 0x07FF) << 6);
-    buf[15] = (uint8_t)((msg->channels[10] & 0x07FF) >> 2);
-    buf[16] = (uint8_t)((msg->channels[10] & 0x07FF) >> 10 |
-                        (msg->channels[11] & 0x07FF) << 1);
-    buf[17] = (uint8_t)((msg->channels[11] & 0x07FF) >> 7 |
-                        (msg->channels[12] & 0x07FF) << 4);
-    buf[18] = (uint8_t)((msg->channels[12] & 0x07FF) >> 4 |
-                        (msg->channels[13] & 0x07FF) << 7);
-    buf[19] = (uint8_t)((msg->channels[13] & 0x07FF) >> 1);
-    buf[20] = (uint8_t)((msg->channels[13] & 0x07FF) >> 9 |
-                        (msg->channels[14] & 0x07FF) << 2);
-    buf[21] = (uint8_t)((msg->channels[14] & 0x07FF) >> 6 |
-                        (msg->channels[15] & 0x07FF) << 5);
-    buf[22] = (uint8_t)((msg->channels[15] & 0x07FF) >> 3);
+    buf[1] = (uint8_t)((msg->channels[CH_1] & 0x07FF));
+    buf[2] = (uint8_t)((msg->channels[CH_1] & 0x07FF) >> 8 |
+                        (msg->channels[CH_2] & 0x07FF) << 3);
+    buf[3] = (uint8_t)((msg->channels[CH_2] & 0x07FF) >> 5 |
+                        (msg->channels[CH_3] & 0x07FF) << 6);
+    buf[4] = (uint8_t)((msg->channels[CH_3] & 0x07FF) >> 2);
+    buf[5] = (uint8_t)((msg->channels[CH_3] & 0x07FF) >> 10 |
+                        (msg->channels[CH_4] & 0x07FF) << 1);
+    buf[6] = (uint8_t)((msg->channels[CH_4] & 0x07FF) >> 7 |
+                        (msg->channels[CH_5] & 0x07FF) << 4);
+    buf[7] = (uint8_t)((msg->channels[CH_5] & 0x07FF) >> 4 |
+                        (msg->channels[CH_6] & 0x07FF) << 7);
+    buf[8] = (uint8_t)((msg->channels[CH_6] & 0x07FF) >> 1);
+    buf[9] = (uint8_t)((msg->channels[CH_6] & 0x07FF) >> 9 |
+                        (msg->channels[CH_7] & 0x07FF) << 2);
+    buf[10] = (uint8_t)((msg->channels[CH_7] & 0x07FF) >> 6 |
+                        (msg->channels[CH_8] & 0x07FF) << 5);
+    buf[11] = (uint8_t)((msg->channels[CH_8] & 0x07FF) >> 3);
+    buf[12] = (uint8_t)((msg->channels[CH_9] & 0x07FF));
+    buf[13] = (uint8_t)((msg->channels[CH_9] & 0x07FF) >> 8 |
+                        (msg->channels[CH_10] & 0x07FF) << 3);
+    buf[14] = (uint8_t)((msg->channels[CH_10] & 0x07FF) >> 5 |
+                        (msg->channels[CH_11] & 0x07FF) << 6);
+    buf[15] = (uint8_t)((msg->channels[CH_11] & 0x07FF) >> 2);
+    buf[16] = (uint8_t)((msg->channels[CH_11] & 0x07FF) >> 10 |
+                        (msg->channels[CH_12] & 0x07FF) << 1);
+    buf[17] = (uint8_t)((msg->channels[CH_12] & 0x07FF) >> 7 |
+                        (msg->channels[CH_13] & 0x07FF) << 4);
+    buf[18] = (uint8_t)((msg->channels[CH_13] & 0x07FF) >> 4 |
+                        (msg->channels[CH_14] & 0x07FF) << 7);
+    buf[19] = (uint8_t)((msg->channels[CH_14] & 0x07FF) >> 1);
+    buf[20] = (uint8_t)((msg->channels[CH_14] & 0x07FF) >> 9 |
+                        (msg->channels[CH_15] & 0x07FF) << 2);
+    buf[21] = (uint8_t)((msg->channels[CH_15] & 0x07FF) >> 6 |
+                        (msg->channels[CH_16] & 0x07FF) << 5);
+    buf[22] = (uint8_t)((msg->channels[CH_16] & 0x07FF) >> 3);
 
     // Flag Byte
     buf[23] = msg->flagByte;
@@ -86,11 +86,11 @@ int sbus_open() {
     int sbusFile = open(SBUS_TTY_FILE, O_WRONLY);
     if (sbusFile == -1) {
         perror("Error connecting to SBUS.");
-	exit(EXIT_FAILURE);
+	    return SBUS_ERROR;
     }
 
     struct termios2 tty;
-    memset(&tty, 0, sizeof(tty));
+    // memset(&tty, 0, sizeof(tty));
 
     if (ioctl(sbusFile, TCGETS2 ,&tty) < 0) {
         perror("Error: Can't get TTY File attributes");
@@ -111,12 +111,12 @@ int sbus_open() {
 
     // Baud rate
     tty.c_cflag &= ~CBAUD;
-    tty.c_cflag |= BOTHER;
+    tty.c_cflag |= BOTHER;  // see CBAUDEX in case this doesnt work!!
     tty.c_ospeed = SBUS_BAUD_RATE;
 
     if (ioctl(sbusFile, TCSETS2, &tty) < 0) {
     	perror("Error setting baud rate.");
-	return SBUS_ERROR;
+	    return SBUS_ERROR;
     }
 
 
@@ -140,8 +140,7 @@ uint8_t initialize_sbus_frame(struct SBUSFrame *msg) {
     // make flagByte 0x00
     msg->flagByte = 0x00;
 
-    // INIT THE FLAG TO SOMETHING!
     msg->endByte = 0x00;
 
     return SBUS_SUCCESS;
-}
+}      
