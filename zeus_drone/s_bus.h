@@ -1,4 +1,5 @@
 #include "stdint.h"
+
 #define SBUS_TTY_FILE  "/dev/ttySOMETHING"
 #define SBUS_FRAME_LENGTH 25
 #define SBUS_NUM_CHANNELS 16
@@ -20,6 +21,11 @@
 #define CH_14 13
 #define CH_15 14
 #define CH_16 15
+
+#define THROTTLE CH_3
+#define ROLL CH_1
+#define PITCH CH_2
+#define YAW CH_3
 
 // Success / Error codes
 #define SBUS_SUCCESS 5

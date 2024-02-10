@@ -20,7 +20,6 @@ uint8_t sbus_write(const int sbusFile, const struct SBUSFrame *msg) {
     uint8_t buf[SBUS_FRAME_LENGTH];
     memset(buf, 0, sizeof(buf));
 
-
     // Header Frame
     buf[0] = msg->startByte;
 
