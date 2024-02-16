@@ -67,6 +67,10 @@ uint8_t sbus_write(const int sbusFile, const struct SBUSFrame *msg) {
     // End Frame
     buf[SBUS_FRAME_LENGTH - 1] = msg->endByte;
 
+#ifdef SBUS_INVERTED
+    for (uint8_t i = 0; i < SBUS_FRAME_LENGTH; ++i)
+	    buf[i] = ~buf[i];
+#endif
 
     ssize_t bytes_written = write(sbusFile, buf, sizeof(buf));
     
@@ -88,6 +92,7 @@ int sbus_open() {
 	    return SBUS_ERROR;
     }
 
+#ifdef TTY_DEV
     struct termios2 tty;
     // memset(&tty, 0, sizeof(tty));
 
@@ -98,10 +103,12 @@ int sbus_open() {
     }
 
     // configure tty settings
+
     tty.c_cflag |= PARENB;
-    tty.c_cflag &= ~PARODD;
+    tty.c_cflag &= ~(PARODD | CMSPAR);
     tty.c_cflag |= CSTOPB;
     tty.c_cflag &= ~CSIZE;
+    tty.c_cflag |= CLOCAL;
     tty.c_cflag |= CS8;        // 8 bits per byte
     tty.c_cflag &= ~CRTSCTS;  // disable hardware flow control
     tty.c_lflag &= ~ECHO;    // do not echo
@@ -112,13 +119,12 @@ int sbus_open() {
     tty.c_cflag &= ~CBAUD;
     tty.c_cflag |= BOTHER;  // see CBAUDEX in case this doesnt work!!
     tty.c_ospeed = SBUS_BAUD_RATE;
-
+    tty.c_ispeed = SBUS_BAUD_RATE; // perhaps not needed
     if (ioctl(sbusFile, TCSETS2, &tty) < 0) {
     	perror("Error setting baud rate.");
-	    return SBUS_ERROR;
+	return SBUS_ERROR;
     }
-
-
+#endif
     return sbusFile;
 }
 

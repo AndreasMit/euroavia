@@ -9,7 +9,7 @@ int main() {
 	
 	struct SBUSFrame msg;
 	initialize_sbus_frame(&msg);
-	set_sbus_channel(&msg, THROTTLE, 1000);
+	set_sbus_channel(&msg, THROTTLE, 1100);
 	sbus_write(fd, &msg);		
 	sleep(2);
 	clear_sbus_channels(&msg);
