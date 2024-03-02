@@ -6,13 +6,28 @@ int main() {
 
 	int fd = sbus_open();
 	// initialize SBUSFrame struct
-	
 	struct SBUSFrame msg;
 	initialize_sbus_frame(&msg);
-	set_sbus_channel(&msg, THROTTLE, 1100);
-	sbus_write(fd, &msg);		
-	sleep(2);
-	clear_sbus_channels(&msg);
-	sbus_write(fd, &msg);
+
+	while (1) {
+		set_sbus_channel(&msg, CH_1, 990);
+		set_sbus_channel(&msg, CH_2, 992);
+		set_sbus_channel(&msg, CH_3, 1299);
+		set_sbus_channel(&msg, CH_4, 989);
+		set_sbus_channel(&msg, CH_5, 172);
+		set_sbus_channel(&msg, CH_6, 172);
+		set_sbus_channel(&msg, CH_7, 172);
+		set_sbus_channel(&msg, CH_8, 172);
+		set_sbus_channel(&msg, CH_9, 172);
+		set_sbus_channel(&msg, CH_10, 172);
+		set_sbus_channel(&msg, CH_11, 1031);
+		set_sbus_channel(&msg, CH_12, 1810);
+		set_sbus_channel(&msg, CH_13, 992);
+		set_sbus_channel(&msg, CH_14, 992);
+		set_sbus_channel(&msg, CH_15, 992);
+		set_sbus_channel(&msg, CH_16, 992);
+		sbus_write(fd, &msg);
+	}
+
 	return 0;
 }

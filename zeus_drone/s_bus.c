@@ -133,12 +133,14 @@ void set_sbus_channel(struct SBUSFrame *msg, uint8_t CHANNEL_NO, int value) {
 }
 
 void clear_sbus_channels(struct SBUSFrame *msg) {
-    memset(msg->channels, MIN_VALUE, sizeof(msg->channels));
+    for(uint8_t i = 0; i < SBUS_NUM_CHANNELS; ++i) {
+        msg->channels[i] = MIN_VALUE;
+    }
 }
 
 uint8_t initialize_sbus_frame(struct SBUSFrame *msg) {
 
-    msg->startByte = 0x0F;
+    msg->startByte = 0x0f;
 
     clear_sbus_channels(msg);
 
@@ -148,4 +150,4 @@ uint8_t initialize_sbus_frame(struct SBUSFrame *msg) {
     msg->endByte = 0x00;
 
     return SBUS_SUCCESS;
-}      
+}

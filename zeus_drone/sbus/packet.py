@@ -43,12 +43,9 @@ class PacketReader:
             
             return sbus_packet
 
-    def decode_sbus_channels(self):
+    def decode_sbus_channels(self, list_=None):
         sbus_raw = self.read_sbus(array_ints=True)
-        # first byte is header 0x0F
-        # for i in range(25):
-            # print(hex(sbus_raw[i]))
-        # return []
+        # sbus_raw = list_
         HEADER = sbus_raw[0]
         CHANNELS = [0 for _ in range(16)]
 
