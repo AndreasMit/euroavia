@@ -5,7 +5,7 @@
 int main() {
 
 	int fd = sbus_open();
-	// initialize SBUSFrame struct
+
 	struct SBUSFrame msg;
 	initialize_sbus_frame(&msg);
 

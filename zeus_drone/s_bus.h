@@ -1,10 +1,10 @@
 #include "stdint.h"
 
-#define SBUS_TTY_FILE  "/dev/ttyUSB0"
+#define SBUS_TTY_FILE  "/dev/ttyS0"
+//#define SBUS_TTY_FILE "./example"
 #define SBUS_FRAME_LENGTH 25
 #define SBUS_NUM_CHANNELS 16
 #define SBUS_BAUD_RATE 100000
-// #define SBUS_INVERTED
 #define TTY_DEV
 #define MIN_VALUE 172
 #define MAX_VALUE 1810

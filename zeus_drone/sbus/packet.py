@@ -8,12 +8,12 @@ class PacketReader:
         self.port = port
         self.baud_rate = baud_rate
         self.timeout = timeout
-        self.ser = serial.Serial(self.port, 
-                                 self.baud_rate, 
-                                 timeout=self.timeout, 
-                                 bytesize=serial.EIGHTBITS, 
-                                 parity=serial.PARITY_EVEN, 
-                                 stopbits=serial.STOPBITS_TWO)
+        #self.ser = serial.Serial(self.port, 
+        #                         self.baud_rate, 
+        #                         timeout=self.timeout, 
+         #                        bytesize=serial.EIGHTBITS, 
+          #                       parity=serial.PARITY_EVEN, 
+           #                      stopbits=serial.STOPBITS_TWO)
 
     
     def read_raw(self, read_bytes=25):
@@ -44,8 +44,8 @@ class PacketReader:
             return sbus_packet
 
     def decode_sbus_channels(self, list_=None):
-        sbus_raw = self.read_sbus(array_ints=True)
-        # sbus_raw = list_
+        #sbus_raw = self.read_sbus(array_ints=True)
+        sbus_raw = list_
         HEADER = sbus_raw[0]
         CHANNELS = [0 for _ in range(16)]
 

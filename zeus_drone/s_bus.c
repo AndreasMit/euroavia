@@ -67,11 +67,6 @@ uint8_t sbus_write(const int sbusFile, const struct SBUSFrame *msg) {
     // End Frame
     buf[SBUS_FRAME_LENGTH - 1] = msg->endByte;
 
-#ifdef SBUS_INVERTED
-    for (uint8_t i = 0; i < SBUS_FRAME_LENGTH; ++i)
-	    buf[i] = ~buf[i];
-#endif
-
     ssize_t bytes_written = write(sbusFile, buf, sizeof(buf));
     
     if (bytes_written == -1) {
@@ -94,7 +89,6 @@ int sbus_open() {
 
 #ifdef TTY_DEV
     struct termios2 tty;
-    // memset(&tty, 0, sizeof(tty));
 
     if (ioctl(sbusFile, TCGETS2 ,&tty) < 0) {
         perror("Error: Can't get TTY File attributes");
@@ -125,6 +119,7 @@ int sbus_open() {
 	return SBUS_ERROR;
     }
 #endif
+
     return sbusFile;
 }
 
@@ -134,7 +129,7 @@ void set_sbus_channel(struct SBUSFrame *msg, uint8_t CHANNEL_NO, int value) {
 
 void clear_sbus_channels(struct SBUSFrame *msg) {
     for(uint8_t i = 0; i < SBUS_NUM_CHANNELS; ++i) {
-        msg->channels[i] = MIN_VALUE;
+        msg->channels[i] = 0;
     }
 }
 
