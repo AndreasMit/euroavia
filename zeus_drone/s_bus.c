@@ -133,7 +133,7 @@ void set_sbus_channel(struct SBUSFrame *msg, uint8_t CHANNEL_NO, int value) {
 }
 
 void clear_sbus_channels(struct SBUSFrame *msg) {
-    memset(msg->channels, 0, sizeof(msg->channels));
+    memset(msg->channels, MIN_VALUE, sizeof(msg->channels));
 }
 
 uint8_t initialize_sbus_frame(struct SBUSFrame *msg) {

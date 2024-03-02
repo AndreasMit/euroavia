@@ -4,8 +4,10 @@
 #define SBUS_FRAME_LENGTH 25
 #define SBUS_NUM_CHANNELS 16
 #define SBUS_BAUD_RATE 100000
-#define SBUS_INVERTED
+// #define SBUS_INVERTED
 #define TTY_DEV
+#define MIN_VALUE 172
+#define MAX_VALUE 1810
 
 #define CH_1 0
 #define CH_2 1
