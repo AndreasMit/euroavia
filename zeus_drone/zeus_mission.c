@@ -27,6 +27,7 @@ int main() {
 		set_sbus_channel(&msg, CH_15, 992);
 		set_sbus_channel(&msg, CH_16, 992);
 		sbus_write(fd, &msg);
+		usleep(2 * 10000);
 	}
 
 	return 0;

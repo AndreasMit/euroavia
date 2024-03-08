@@ -1,6 +1,6 @@
 #include "stdint.h"
 
-#define SBUS_TTY_FILE  "/dev/ttyS0"
+#define SBUS_TTY_FILE  "/dev/ttyAMA0"
 //#define SBUS_TTY_FILE "./example"
 #define SBUS_FRAME_LENGTH 25
 #define SBUS_NUM_CHANNELS 16

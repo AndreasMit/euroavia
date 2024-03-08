@@ -81,7 +81,7 @@ uint8_t sbus_write(const int sbusFile, const struct SBUSFrame *msg) {
 
 int sbus_open() {
 
-    int sbusFile = open(SBUS_TTY_FILE, O_WRONLY);
+    int sbusFile = open(SBUS_TTY_FILE, O_RDWR | O_NOCTTY);
     if (sbusFile == -1) {
         perror("Error connecting to SBUS.");
 	    return SBUS_ERROR;
@@ -99,21 +99,43 @@ int sbus_open() {
     // configure tty settings
 
     tty.c_cflag |= PARENB;
-    tty.c_cflag &= ~(PARODD | CMSPAR);
+    tty.c_cflag &= ~PARODD;
     tty.c_cflag |= CSTOPB;
     tty.c_cflag &= ~CSIZE;
+    tty.c_cflag |= CS8;
+    tty.c_cflag &= ~CRTSCTS;
+    tty.c_cflag |= CREAD;
     tty.c_cflag |= CLOCAL;
-    tty.c_cflag |= CS8;        // 8 bits per byte
-    tty.c_cflag &= ~CRTSCTS;  // disable hardware flow control
-    tty.c_lflag &= ~ECHO;    // do not echo
-    tty.c_lflag &= ~ISIG;    // do not generate signals
-    tty.c_oflag &= ~OFILL;  // no fill characters
+
+    tty.c_lflag &= ~ICANON;
+    tty.c_lflag &= ~ECHO;
+    tty.c_lflag &= ~ISIG;
+    tty.c_lflag &= ~IEXTEN;
+
+    tty.c_iflag &= ~(IXON | IXOFF | IXANY);
+    tty.c_iflag |= IGNBRK;
+    tty.c_iflag |= INPCK;
+    tty.c_iflag |= IGNPAR;
+    tty.c_iflag &= ~ISTRIP;
+    tty.c_iflag &= ~INLCR;
+    tty.c_iflag &= ~ICRNL;
+    tty.c_iflag &= ~IGNCR;
+
+    tty.c_oflag &= ~OPOST;
+    tty.c_oflag &= ~ONLCR;
+    tty.c_oflag &= ~OCRNL;
+    tty.c_oflag &= ~(ONOCR | ONLRET);
+    tty.c_oflag &= ~OFILL;
+
+    tty.c_cc[VTIME] = 0;
+    tty.c_cc[VMIN] = 1;
 
     // Baud rate
     tty.c_cflag &= ~CBAUD;
     tty.c_cflag |= BOTHER;  // see CBAUDEX in case this doesnt work!!
     tty.c_ospeed = SBUS_BAUD_RATE;
     tty.c_ispeed = SBUS_BAUD_RATE; // perhaps not needed
+    
     if (ioctl(sbusFile, TCSETS2, &tty) < 0) {
     	perror("Error setting baud rate.");
 	return SBUS_ERROR;
