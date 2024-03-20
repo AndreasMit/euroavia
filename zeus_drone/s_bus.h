@@ -1,6 +1,6 @@
 #include "stdint.h"
 
-#define SBUS_TTY_FILE  "/dev/ttyAMA0"
+#define SBUS_TTY_FILE  "/dev/ttyUSB0"
 //#define SBUS_TTY_FILE "./example"
 #define SBUS_FRAME_LENGTH 25
 #define SBUS_NUM_CHANNELS 16
@@ -8,6 +8,8 @@
 #define TTY_DEV
 #define MIN_VALUE 172
 #define MAX_VALUE 1810
+
+#define SBUS_PACKETS_DELAY_TIME 10 // 10 msec delay time between each sbus packet
 
 #define CH_1 0
 #define CH_2 1
@@ -34,7 +36,7 @@
 // Success / Error codes
 #define SBUS_SUCCESS 5
 #define SBUS_ERROR -1
-
+#define SBUS_INTERVAL 2 // not yet ready to send packet. (15ms delay not passed yet).
 
 // 16 bit channels. Only 11 bits will be used per channel!
 

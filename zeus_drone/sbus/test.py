@@ -4,14 +4,16 @@ import time
 
 
 
-packet_reader = PacketReader('COM4', 100000)
+packet_reader = PacketReader('/dev/ttyUSB0', 100000)
 
 hexdump_list = [0x0f, 0xde, 0x03, 0xdf, 0x44, 0xbb, 0xc7, 0x0a, 0x56, 0xb0, 
 0x82, 0x15, 0xac, 0x60, 0xc5, 0x01, 0x25, 0x0e, 0x3e, 0xf0, 0x81, 0x0f, 
 0x7c, 0x00,  0x00]
 
 while 1:
-    # packet_reader.clear_display()
-    # packet_reader.decode_sbus_display(in_hex=False)
-    print(packet_reader.decode_sbus_channels(hexdump_list))
-    # time.sleep(0.5)
+    #packet_reader.clear_display()
+    #packet_reader.decode_sbus_display(in_hex=False)
+    print(packet_reader.read_raw())
+    #print(packet_reader.decode_sbus_channels(hexdump_list))
+    #time.sleep(2)
+    

@@ -7,9 +7,25 @@
 #include "unistd.h"
 #include "asm/termbits.h"
 #include "sys/ioctl.h"
+#include <sys/time.h>
+
+long long current_timestamp() {
+	struct timeval tv;
+	
+	gettimeofday(&tv, NULL);
+	return (((long long)tv.tv_sec) * 1000 + (tv.tv_usec / 1000));
+}
+
+static long long last_write_time = 0;
 
 uint8_t sbus_write(const int sbusFile, const struct SBUSFrame *msg) {
+	
 
+	long long current_time = current_timestamp();
+	if (current_time - last_write_time < SBUS_PACKETS_DELAY_TIME) {
+		fprintf(stdout, "Time Difference %lld\n", current_time - last_write_time);
+		return SBUS_INTERVAL;
+	}
 
     if (!sbusFile || !msg) {
         perror("Error: Can't write to specific tty file or write specific message");
@@ -75,6 +91,7 @@ uint8_t sbus_write(const int sbusFile, const struct SBUSFrame *msg) {
         return SBUS_ERROR;
     }
 
+    last_write_time = current_timestamp();
     return SBUS_SUCCESS; // 0 means 
 }
 
@@ -151,7 +168,7 @@ void set_sbus_channel(struct SBUSFrame *msg, uint8_t CHANNEL_NO, int value) {
 
 void clear_sbus_channels(struct SBUSFrame *msg) {
     for(uint8_t i = 0; i < SBUS_NUM_CHANNELS; ++i) {
-        msg->channels[i] = 0;
+        msg->channels[i] = MIN_VALUE;
     }
 }
 
