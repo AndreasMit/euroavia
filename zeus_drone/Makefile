@@ -1,8 +1,8 @@
 C = gcc
 CFLAGS = -Wall
-SRCS = zeus_mission.c s_bus.c
+SRCS = ./src/zeus_mission.c ./src/s_bus.c
 OBJS = $(SRCS:.c=.o)
-TARGET = zeus_mission
+TARGET = ./build/zeus_mission
 
 all: $(TARGET)
 

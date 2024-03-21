@@ -1,0 +1,4 @@
+#ifndef MAVLINK_TELEMETRY_H
+#define MAVLINK_TELEMETRY_H
+
+#endif

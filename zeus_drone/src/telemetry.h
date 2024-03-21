@@ -6,6 +6,7 @@
 
 #define MAVLINK_TELEMETRY
 
+
 #define NO_GPS 0
 #define NOT_ENOUGH_SATELLITES 1
 #define GPS_OK 2

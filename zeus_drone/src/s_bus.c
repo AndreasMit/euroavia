@@ -9,23 +9,25 @@
 #include "sys/ioctl.h"
 #include <sys/time.h>
 
+/*	Last time a packet was sent	*/
+static long long last_write_time = 0;
+
+/*	Get current time. Used for calculating interval between consecutive packets sent. */
 long long current_timestamp() {
 	struct timeval tv;
-	
 	gettimeofday(&tv, NULL);
 	return (((long long)tv.tv_sec) * 1000 + (tv.tv_usec / 1000));
 }
 
-static long long last_write_time = 0;
 
+/*	Encode packet and write to serial port	*/
 uint8_t sbus_write(const int sbusFile, const struct SBUSFrame *msg) {
 	
-
-	long long current_time = current_timestamp();
-	if (current_time - last_write_time < SBUS_PACKETS_DELAY_TIME) {
-		fprintf(stdout, "Time Difference %lld\n", current_time - last_write_time);
-		return SBUS_INTERVAL;
-	}
+    /* Check if we can send an sbus packet. (Delay specificed must have passed)*/
+    long long current_time = current_timestamp();
+    if (current_time - last_write_time < SBUS_PACKETS_DELAY_TIME)
+	/* Must wait before sending another packet*/
+	return SBUS_INTERVAL; 
 
     if (!sbusFile || !msg) {
         perror("Error: Can't write to specific tty file or write specific message");
@@ -36,7 +38,7 @@ uint8_t sbus_write(const int sbusFile, const struct SBUSFrame *msg) {
     uint8_t buf[SBUS_FRAME_LENGTH];
     memset(buf, 0, sizeof(buf));
 
-    // Header Frame
+    /* Header Frame */
     buf[0] = msg->startByte;
 
     // Channels
@@ -77,10 +79,10 @@ uint8_t sbus_write(const int sbusFile, const struct SBUSFrame *msg) {
                         (msg->channels[CH_16] & 0x07FF) << 5);
     buf[22] = (uint8_t)((msg->channels[CH_16] & 0x07FF) >> 3);
 
-    // Flag Byte
+    /* Flag Byte */
     buf[23] = msg->flagByte;
 
-    // End Frame
+    /* End Frame */
     buf[SBUS_FRAME_LENGTH - 1] = msg->endByte;
 
     ssize_t bytes_written = write(sbusFile, buf, sizeof(buf));
@@ -91,11 +93,13 @@ uint8_t sbus_write(const int sbusFile, const struct SBUSFrame *msg) {
         return SBUS_ERROR;
     }
 
+    /* Update last time a packet was written */
     last_write_time = current_timestamp();
-    return SBUS_SUCCESS; // 0 means 
+    return SBUS_SUCCESS; 
 }
 
 
+/*	Open serial port for writing sbus */
 int sbus_open() {
 
     int sbusFile = open(SBUS_TTY_FILE, O_RDWR | O_NOCTTY);
@@ -112,8 +116,6 @@ int sbus_open() {
         close(sbusFile);
         return SBUS_ERROR;
     }
-
-    // configure tty settings
 
     tty.c_cflag |= PARENB;
     tty.c_cflag &= ~PARODD;
@@ -147,7 +149,6 @@ int sbus_open() {
     tty.c_cc[VTIME] = 0;
     tty.c_cc[VMIN] = 1;
 
-    // Baud rate
     tty.c_cflag &= ~CBAUD;
     tty.c_cflag |= BOTHER;  // see CBAUDEX in case this doesnt work!!
     tty.c_ospeed = SBUS_BAUD_RATE;
@@ -159,29 +160,29 @@ int sbus_open() {
     }
 #endif
 
-    return sbusFile;
+    return sbusFile; /* Return file descriptor of serial port */
 }
 
+
+/*	Give a specified SBUS channel a specified value	*/
 void set_sbus_channel(struct SBUSFrame *msg, uint8_t CHANNEL_NO, int value) {
     msg->channels[CHANNEL_NO] = value;
 }
 
+
+/*	Clear all SBUS channels	*/
 void clear_sbus_channels(struct SBUSFrame *msg) {
     for(uint8_t i = 0; i < SBUS_NUM_CHANNELS; ++i) {
         msg->channels[i] = MIN_VALUE;
     }
 }
 
+
+/*	Give proper protocol values to SBUS message frame*/
 uint8_t initialize_sbus_frame(struct SBUSFrame *msg) {
-
     msg->startByte = 0x0f;
-
     clear_sbus_channels(msg);
-
-    // make flagByte 0x00
     msg->flagByte = 0x00;
-
     msg->endByte = 0x00;
-
     return SBUS_SUCCESS;
 }
