@@ -27,7 +27,7 @@ uint8_t sbus_write(const int sbusFile, const struct SBUSFrame *msg) {
     long long current_time = current_timestamp();
     if (current_time - last_write_time < SBUS_PACKETS_DELAY_TIME)
 	/* Must wait before sending another packet*/
-	return SBUS_INTERVAL; 
+	    return SBUS_INTERVAL; 
 
     if (!sbusFile || !msg) {
         perror("Error: Can't write to specific tty file or write specific message");
@@ -158,6 +158,7 @@ int sbus_open() {
     	perror("Error setting baud rate.");
 	return SBUS_ERROR;
     }
+
 #endif
 
     return sbusFile; /* Return file descriptor of serial port */

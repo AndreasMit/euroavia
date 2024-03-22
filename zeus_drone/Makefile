@@ -7,7 +7,7 @@ TARGET = ./build/zeus_mission
 all: $(TARGET)
 
 $(TARGET): $(SRCS)
-	$(CC) $(CFLAGS) $(SRCS) -o $(TARGET)
+	$(CC) $(CFLAGS) $(SRCS) -o $(TARGET) -I include/
 
 clean:
 	rm -f $(OBJS) $(TARGET)
