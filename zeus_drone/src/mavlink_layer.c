@@ -3,12 +3,21 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
-#include <linux/termios.h>
+// #include <linux/termios.h>
+#include "asm/termbits.h"
 #include <stdbool.h>
-#include <./telemetry.h>
-#include <./mavlink_layer.h>
+#include "telemetry.h"
+#include "mavlink_layer.h"
 #include <mavlink/common/mavlink.h>
 
+
+#ifndef TELEMETRY_PORT
+	#error "Telemetry port is not defined in mavlink_layer.c"
+#endif
+
+#ifndef MAVLINK_BAUD_RATE
+	#error "MAVLINK baud rate is not defined"
+#endif
 
 static int mavlink_fd;
 
@@ -23,25 +32,28 @@ mavlink_battery_status_t battery_status;
 
 
 /*	Parse 1 byte at a time	*/
-int handleTelemetry(telemetry_info_t *telemetry) {
+void handleTelemetry(telemetry_info_t *telemetry) {
 	/* Read 1 byte from serial port */
 	uint8_t byte;
-	while (read(mavlink_fd, byte, sizeof(byte))) {
-
+	while (read(mavlink_fd, &byte, sizeof(byte))) {
+		fprintf(stdout, "Byte read: %d\n", byte);
 		if (mavlink_parse_char(chan, byte, &msg, &status)) {
-			fprintf(stdout, "Received message with ID %d, sequence: %d from compontent %d of system %d\n", msg.msgid, msg.seq, msg.sysid);
+			fprintf(stdout, "Received message with ID %u, sequence: %u from compontent %u of system %u\n", msg.msgid, msg.seq, msg.sysid);
 			/* Paylod decoding */
 			switch(msg.msgid) {
 				case MAVLINK_MSG_ID_GLOBAL_POSITION_INT: {
 					mavlink_msg_global_position_int_decode(&msg, &global_position);
+					fprintf(stdout, "MESSAGE GLOBAL POSITION\n");
 				}
 					break;
-				case MAVLINK_MSG_ID_GPS_STATUS: {
+				case MAVLINK_MSG_ID_GPS_RAW_INT: {
 					mavlink_msg_gps_raw_int_decode(&msg, &gps_raw);
+					fprintf(stdout, "MESSAGE GPS RAW\n");
 				}
 					break;
 				case MAVLINK_MSG_ID_BATTERY_STATUS: {
 					mavlink_msg_battery_status_decode(&msg, &battery_status);
+					fprintf(stdout, "MESSAGE BATTERY STATUS\n");
 				}
 					break;
 				default:
@@ -57,7 +69,7 @@ int handleTelemetry(telemetry_info_t *telemetry) {
 /* Initialise mavlink serial port for telemetry input */
 int initMAVLink() {
 	
-	mavlink_fd = open(TELEMETRY_PORT, O_RDONLY | O_NOCTTY | O_NONBLOCK );
+	mavlink_fd = open(TELEMETRY_PORT, O_RDONLY | O_NOCTTY );
 	if (mavlink_fd == -1) {
 		fprintf(stderr, "Error: Cannot open mavlink telemetry port.\n");
 		return -1;
@@ -66,7 +78,7 @@ int initMAVLink() {
 	struct termios2 tio;
 	if (ioctl(mavlink_fd, TCGETS2, &tio) == -1) {
 		fprintf(stderr, "Error getting serial port settings for MAVLINK telemetry.\n");
-		vlose(mavlink_fd);
+		close(mavlink_fd);
 		return -1;
 	}
 
@@ -76,11 +88,12 @@ int initMAVLink() {
 	tio.c_cflag |= CS8;
 	tio.c_cflag &= ~PARENB;
 	tio.c_cflag &= ~CSTOPB;
+  	tio.c_cflag &= ~CRTSCTS;
 
     tio.c_ispeed = MAVLINK_BAUD_RATE;
 
-	tio.c_cc[VTIME] = 0;
-	tio.c_cc[VMIN] = 0;
+	// tio.c_cc[VTIME] = 0;
+	// tio.c_cc[VMIN] = 0;
 
 	if (ioctl(mavlink_fd, TCSETS2, &tio) == -1) {
 		fprintf(stderr, "Error setting serial port settings for MAVLINK telemetry.\n");

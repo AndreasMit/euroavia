@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
-#include "./telemetry.h";
+#include "./telemetry.h"
 
 
 #ifdef MAVLINK_TELEMETRY
@@ -21,15 +21,21 @@ if (ret == -1)
     fprintf(stderr, "Error initialising telemetry.\n");
 else
     fprintf(stdout, "Telemetry Initialised.\n");
+
+return ret;
 }
 
 
 /*  Gets telemetry data  */
-int processTelemetry(telemetry_info_t *telemetry);
+void processTelemetry(telemetry_info_t *telemetry) {
+#ifdef MAVLINK_TELEMETRY
+    handleTelemetry();
+#endif
+}
 
 
 /*  Terminates Telemetry    */
-int freeTelemetry() {
+void freeTelemetry() {
 
 #ifdef MAVLINK_TELEMETRY
     closeMAVLink();

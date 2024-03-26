@@ -1,10 +1,12 @@
 #ifndef TELEMETRY_H
 #define TELEMETRY_H
 
+#include <stdint.h>
+
 #define USE_TELEMETRY
 #define MAVLINK_TELEMETRY
 
-#define TELEMETRY_PORT "/dev/ttySOMETHING"
+#define TELEMETRY_PORT "/dev/ttyUSB0"
 
 #define NO_GPS 0
 #define NOT_ENOUGH_SATELLITES 1
@@ -30,7 +32,7 @@ typedef struct __telemetry_info {
 
 
 int initTelemetry();
-int processTelemetry(telemetry_info_t *telemetry);
-int freeTelemetry();
+void processTelemetry(telemetry_info_t *telemetry);
+void freeTelemetry();
 
 #endif

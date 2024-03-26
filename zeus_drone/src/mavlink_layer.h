@@ -3,4 +3,10 @@
 
 #define MAVLINK_BAUD_RATE 57600
 
+
+int initMAVLink();
+void handleTelemetry();
+void closeMAVLink();
+
+
 #endif
