@@ -29,7 +29,10 @@ const int chan = MAVLINK_COMM_0;
 mavlink_global_position_int_t global_position;
 mavlink_gps_raw_int_t gps_raw;
 mavlink_battery_status_t battery_status;
-
+mavlink_attitude_t attitude;
+mavlink_heartbeat_t heartbeat;
+mavlink_vfr_hud_t vfr_hud;
+mavlink_rc_channels_raw_t rc_channels_raw;
 
 /*	Parse 1 byte at a time	*/
 void handleTelemetry(telemetry_info_t *telemetry) {
@@ -37,9 +40,11 @@ void handleTelemetry(telemetry_info_t *telemetry) {
 	uint8_t byte;
 	while (read(mavlink_fd, &byte, sizeof(byte))) {
 		fprintf(stdout, "Byte read: %d\n", byte);
+		
 		if (mavlink_parse_char(chan, byte, &msg, &status)) {
 			fprintf(stdout, "Received message with ID %u, sequence: %u from compontent %u of system %u\n", msg.msgid, msg.seq, msg.sysid);
-			/* Paylod decoding */
+			
+			/* Payload decoding */
 			switch(msg.msgid) {
 				case MAVLINK_MSG_ID_GLOBAL_POSITION_INT: {
 					mavlink_msg_global_position_int_decode(&msg, &global_position);
@@ -56,11 +61,32 @@ void handleTelemetry(telemetry_info_t *telemetry) {
 					fprintf(stdout, "MESSAGE BATTERY STATUS\n");
 				}
 					break;
+				case MAVLINK_MSG_ID_ATTITUDE: {
+					mavlink_msg_attitude_decode(&msg, &attitude);
+					fprintf(stdout, "MESSAGE ATTITUDE RECEIVED\n");
+				}
+					break;
+				case MAVLINK_MSG_ID_HEARTBEAT: {
+					mavlink_msg_heartbeat_decode(&msg, &heartbeat);
+					fprintf(stdout, "HEARTBEAT RECEIVED\n");
+				}	
+					break;
+				case MAVLINK_MSG_ID_VFR_HUD: {
+					mavlink_msg_vfr_hud_decode(&msg, &vfr_hud);
+					fprintf(stdout, "VFR HUD RECEIVED\n");
+				}	
+					break;
+				case MAVLINK_MSG_ID_RC_CHANNELS_RAW: {
+					mavlink_msg_rc_channels_raw_decode(&msg, &rc_channels_raw);
+					fprintf(stdout, "RC CHANNELS RECEIVED\n");
+				}	
+					break;
 				default:
 					break;
 			}
 
 		}
+
 
 	}		
 }
