@@ -29,8 +29,6 @@ typedef struct __telemetry_info {
 	gps_info_t gps;
 } telemetry_info_t;
 
-
-
 int initTelemetry();
 void processTelemetry(telemetry_info_t *telemetry);
 void freeTelemetry();
