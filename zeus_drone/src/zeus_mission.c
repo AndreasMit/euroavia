@@ -1,14 +1,38 @@
+#define _XOPEN_SOURCE 700
+
 #include <stdio.h>
 #include <unistd.h>
+#include <signal.h>
+#include <stdlib.h>
 #include "s_bus.h"
 #include "telemetry.h"
+#include "transmit.h"
 
 
+telemetry_info_t *telemetry = NULL;
+
+
+void sigint_handler(int signum) {
+	fprintf(stdout, "Received SIGINT. Cleaning up and exiting.\n");
+	freeTelemetry(telemetry);
+	exit(signum);
+}
 
 int main() {
 
-	telemetry_info_t telemetry;
-	initTelemetry();
+    // Set up signal handler for SIGINT
+    struct sigaction sigint_action;
+    sigint_action.sa_handler = sigint_handler;
+    sigemptyset(&sigint_action.sa_mask);
+    sigint_action.sa_flags = 0;
+    sigaction(SIGINT, &sigint_action, NULL);
+
+	// Initialise telemetry
+	if (initTelemetry(telemetry) == -1) {
+		fprintf(stderr, "Error: Cannot initialise telemetry. Terminating program...\n");
+		return 1;
+	}
+
 	// int fd = sbus_open();
 
 	// struct SBUSFrame msg;
@@ -32,7 +56,7 @@ int main() {
 		// set_sbus_channel(&msg, CH_15, 992);
 		// set_sbus_channel(&msg, CH_16, 992);
 		// sbus_write(fd, &msg);
-		processTelemetry(&telemetry);
+		processTelemetry(telemetry);
 	}
 
 	return 0;
