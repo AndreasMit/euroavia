@@ -1,0 +1,8 @@
+- PCB, final product design
+- 100 Hz per cycle or so
+- Improving mathematical model of the system
+- Static test of the algorithm
+- Tests in the wind tunnel
+- Activation - Deactivation function from remote
+- Data logging in real flight and action verification
+
