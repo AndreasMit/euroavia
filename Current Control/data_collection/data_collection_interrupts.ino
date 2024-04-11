@@ -121,13 +121,6 @@ void loop(){
 }
 
 
-
-
-
-
-
-
-
 void printDebugStatements(){
   if (first_run_flag){
     Serial.println("Time[ms], Throttle[1000 -> 2000], Current[A], Frequency [Hz]");

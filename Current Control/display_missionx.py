@@ -2,23 +2,23 @@
 Code for displaying logs in telemetry pannel.
 
 """
-import pyserial
-import urllib
+import serial
+import urllib.request
 import random
 import string
 import json
 import time
 
 BAUD_RATE = 115200
-SERIAL_PORT = "COM3"
+SERIAL_PORT = "COM9"
 
 ser = serial.Serial(SERIAL_PORT, BAUD_RATE)
 
 SENT_MISSION_CONFIGURATION = False
 
-BASE_URL = ""
-MISSION_CONFIGURATION_URL = BASE_URL + "/"
-TELEMETRY_LOGS_URL = BASE_URL + "/"
+BASE_URL = "http://localhost:8000/api"
+MISSION_CONFIGURATION_URL = BASE_URL + "/missions/register"
+TELEMETRY_LOGS_URL = BASE_URL + "/telemetry/add-log"
 
 KEYS = [("time", "number", ""), 
         ("throttle", "line", ""), 
@@ -53,6 +53,7 @@ def send_data(url, data):
 
 
 def handle_configuration():
+    global MISSION_ID
     MISSION_ID = generate_random_char()
     print("MISSION ID:", MISSION_ID)
     ms_conf = {
@@ -64,11 +65,36 @@ def handle_configuration():
             } for key in KEYS
         }
     }
+    # print(ms_conf)
     send_data(MISSION_CONFIGURATION_URL, ms_conf)
 
+def validate_list(lst):
+    # Check if the length of the list is 4
+    if len(lst) != len(KEYS):
+        return False
+    
+    # Check if each element in the list is an integer represented as a string
+    for item in lst:
+        # Check if the item is a string
+        if not isinstance(item, str):
+            return False
+        # Try converting the string to an integer
+        try:
+            float(item)
+        except ValueError:
+            # If conversion fails, it's not an integer represented as a string
+            return False
+    return True
+
 def handle_logs():
-    line = ser.readline().decode().strip()
-    value_list = map(float, line.split(","))
+    line = ser.readline()
+    print(line)
+    line_list = line.decode().strip().split(",")
+    
+    if not validate_list(line_list):
+        return False
+
+    value_list = list(map(float, line_list))
     
     if len(value_list) != len(KEYS):
         print("Error: Number of values and keys should be the same!")
@@ -76,12 +102,12 @@ def handle_logs():
     
     metrics_data = {
         'missionID': MISSION_ID,
-        'timestamp': time.time(),
+        'timestamp': time.time_ns() // 1_000_000,
         'metrics': {
             key[1][0].lower(): key[0] for key in zip(value_list, KEYS)
         }
     }
-
+    # print(metrics_data)
     send_data(TELEMETRY_LOGS_URL, metrics_data)
 
 
