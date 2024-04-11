@@ -4,9 +4,15 @@
 Servo motor;
 ADS1115 ADS(0x48);
 
-// Pins Connected -------------------------------
-int motor_esc_pin = A1;     // Reading PWM Throttle 
+/*  Interrupt throttle reading variables  */
+volatile unsigned long pulseInTimeBegin = micros();
+volatile unsigned long pulseInTimeEnd = micros();
+volatile bool newPulseDurationAvailable = false;
 
+
+// Pins Connected -------------------------------
+const uint8_t motor_esc_pin = A1;     // Reading PWM Throttle 
+const uint8_t RECEIVE_PIN = 2;
 // Variables ------------------------------------
 // Variables to store pulse width and throttle position
 unsigned int pulse_width;
@@ -62,6 +68,9 @@ void setup(){
   Serial.println("Begging Data Collection in 2 Seconds...");
   delay(2000);
 
+  /*  Attaching interrupt */
+  attachInterrupt(digitalPinToInterrupt(RECEIVE_PIN), fastPulseIn, CHANGE);
+
 }
 
 // Loop -----------------------------------------
@@ -78,11 +87,14 @@ void loop(){
     // throttle_value = interpolate(timestamp, percentage, arraySize, millis());  // 0 -> 100%
     // throttle_value = int(float(analogRead(A3))*100/498);
     // throttle_value = int(float(throttle_value)/100*1000 + 1000); // 1000 -> 2000
-    unsigned int pulse_width = pulseIn(A0, HIGH);
+    // unsigned int pulse_width = pulseIn(A0, HIGH);
+    if (newPulseDurationAvailable)
+      unsigned int pulse_width = pulseInTimeEnd - pulseInTimeBegin;
     throttle_value = map(pulse_width, 1000, 2000, 1000, 2000);
-    
-    
-    motor.writeMicroseconds(throttle_value);
+
+    Serial.print("Pulse width:"); Serial.println(pulse_width);
+    Serial.print("Throttle value:"); Serial.println(throttle_value);
+    // motor.writeMicroseconds(throttle_value);
 
 
     // READING CURRENT SENSOR ------------------------
@@ -94,7 +106,7 @@ void loop(){
 
 
     // PRINTING VALUES --------------------------------
-    printDebugStatements();
+    // printDebugStatements();
 
 
 
@@ -169,4 +181,15 @@ int interpolate(long timestamp[], int percentage[], int arraySize, int currentTi
   float timeFraction = (float)(currentTime - timestamp[index - 1]) / (timestamp[index] - timestamp[index - 1]);
   int interpolatedPercentage = percentage[index - 1] + timeFraction * (percentage[index] - percentage[index - 1]);
   return interpolatedPercentage;
+}
+
+
+void fastPulseIn() {
+
+  if (digitalRead(6) == HIGH)
+    pulseInTimeBegin = micros()
+  else {
+    pulseInTimeEnd = micros();
+    newPulseDurationAvailable = true;
+  }
 }
