@@ -1,2 +1,5 @@
 .venv/
 venv/
+./Current Control/pico/build/
+.vscode/
+.pycache/
