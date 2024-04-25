@@ -10,7 +10,7 @@ ADS1015 ADS(0x48);
 volatile unsigned long pulseInTimeBegin = micros();
 volatile unsigned long pulseInTimeEnd = micros();
 volatile bool newPulseDurationAvailable = false;
-volatile bool controlEnabled = false;
+volatile bool controlEnabledFlag = false;
 volatile unsigned long controlPulseStart = micros();
 // Pins Connected -------------------------------
 const uint8_t motor_esc_pin = A1;     // Reading PWM Throttle 
@@ -126,7 +126,7 @@ void printDebugStatements(){
     Serial.print(throttle_value); Serial.print(",");
     Serial.print(current_value); Serial.print(",");
     Serial.print(1000/(time_now - time_before)); Serial.print(",");
-    Serial.print(controlEnabled);
+    Serial.print(controlEnabledFlag);
     Serial.println();
   }
 }
@@ -180,9 +180,9 @@ void controlChangeEvent() {
     	unsigned long control_pulse_width = micros() - controlPulseStart;
       // Serial.println(control_pulse_width);
       if (control_pulse_width >= CONTROL_ENABLE_THREASHOLD)
-        controlEnabled = true;
+        controlEnabledFlag = true;
       else
-        controlEnabled = false;
+        controlEnabledFlag = false;
   }
 
 }

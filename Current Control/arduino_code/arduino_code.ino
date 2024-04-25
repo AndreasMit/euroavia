@@ -15,12 +15,12 @@ ADS1015 ADS(0x48);
 volatile unsigned long pulseInTimeBegin = micros();
 volatile unsigned long pulseInTimeEnd = micros();
 volatile bool newPulseDurationAvailable = false;
-volatile bool controlEnabled = false;
+volatile bool controlEnabledFlag = false;
 volatile unsigned long controlPulseStart = micros();
 // Pins Connected -------------------------------
-const uint8_t motor_esc_pin = A1;     // Reading PWM Throttle 
-const uint8_t RECEIVE_PIN = 2;
-const uint8_t CONTROL_PIN = 3;
+const uint8_t motor_esc_pin = A1;     // Writing PWM Throttle 
+const uint8_t RECEIVE_PIN = 2;        // Reading PWM Throttle
+const uint8_t CONTROL_PIN = 3;        // Reading Switch Status
 // Variables ------------------------------------
 // Variables to store pulse width and throttle position
 unsigned long pulse_width;
@@ -37,16 +37,19 @@ float freq = 1;
 // Current Sensor
 int16_t current_adc_reading = 0;
 float current_value = 0;
-float current_value_real = 0;
+float current_value_raw = 0;
 float current_offset = 0;
-float f;
 
+// Current Moving Average Filter
+#define MA_WINDOW_SIZE 10
+int buffer_index = 0;
+float last_c_measured[MA_WINDOW_SIZE] = {0};
+
+// Time Variables
 unsigned long time_now = 0;
 unsigned long time_before = 0;
 bool first_run_flag = true;
 
-#define ARRAY_SIZE 10
-float last_c_measured[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
 // Setup ----------------------------------------
 
@@ -74,7 +77,6 @@ void setup(){
   ADS.setMode(0);
   ADS.setGain(1);
   Serial.print("Data Rate : "); Serial.println(ADS.getDataRate());
-  f = ADS.toVoltage(1);  // Voltage factor
 
   // Current Sensor Configuration
   current_offset = calculateCurrentOffset(200);
@@ -92,30 +94,30 @@ void setup(){
 
 void loop() {
 
-    // Time
-    time_now = millis();
+  // Time
+  time_now = millis();
 
 
-    // READING CURRENT SENSOR ------------------------
-    current_adc_reading = ADS.readADC_Differential_0_1(); //Raw data reading // 0 -> 4095
-    current_value = ADS.toVoltage(current_adc_reading) / 0.04 - current_offset; //0.04V/A -->[A]
-    current_value_real = current_value;
-    current_value = updateAndAverage(last_c_measured, current_value);
+  // READING CURRENT SENSOR ------------------------
+  current_adc_reading = ADS.readADC_Differential_0_1(); //Raw data reading // 0 -> 4095
+  current_value = ADS.toVoltage(current_adc_reading) / 0.04 - current_offset; //0.04V/A -->[A]
+  current_value_raw = current_value;
+  current_value = updateAndAverage(last_c_measured, &buffer_index, current_value);
 
-    // SETTING PWM THROTTLE --------------------------
-    // throttle_value = interpolate(timestamp, percentage, arraySize, millis());  // 0 -> 100%
-    // throttle_value = int(float(analogRead(A3))*100/498);
-    // throttle_value = int(float(throttle_value)/100*1000 + 1000); // 1000 -> 2000
-    // unsigned int pulse_width = pulseIn(A0, HIGH);
-    if (newPulseDurationAvailable) {
-      pulse_width = pulseInTimeEnd - pulseInTimeBegin;
-      throttle_value = map(pulse_width, 1000, 2000, 1000, 2000);
-    }
+
+
+  // READING PWM THROTTLE --------------------------
+  // unsigned int pulse_width = pulseIn(A0, HIGH);
+  if (newPulseDurationAvailable) {
+    pulse_width = pulseInTimeEnd - pulseInTimeBegin;
+    throttle_value = map(pulse_width, 1000, 2000, 1000, 2000);
+  }
+
 
 
   // CONTROL LOGIC -------------------------------
 
-  if (controlEnabled){
+  if (controlEnabledFlag){
     // Turn on the builtin LED
     digitalWrite(LED_BUILTIN, HIGH);  // turn the LED on (HIGH is the voltage level)
 
@@ -161,19 +163,20 @@ void loop() {
 
   // ---------------------------------------------
 
-    motor.writeMicroseconds(throttle_value);
+  motor.writeMicroseconds(throttle_value);
 
-    freq = 1000/(time_now - time_before);
-    // PRINTING VALUES --------------------------------
-    printDebugStatements();
+  freq = 1000/(time_now - time_before);
 
-    // Keeping Frequency Constant
-    while(1000/(millis() - time_now) > TARGET_FREQUENCY ){
-      // Do nothing
-      ;
-    }
+  // PRINTING VALUES --------------------------------
+  printDebugStatements();
 
-    time_before = time_now;
+  // Keeping Frequency Constant
+  while(1000/(millis() - time_now) > TARGET_FREQUENCY ){
+    // Do nothing
+    ;
+  }
+
+  time_before = time_now;
 }
 
 
@@ -181,7 +184,7 @@ void loop() {
 
 void printDebugStatements(){
   if (first_run_flag) {
-    Serial.println("Time[ms], Throttle[1000 -> 2000], Current[A], Frequency [Hz], Control Enabled");
+    Serial.println("Time[ms], Throttle[1000 -> 2000], Current_MA[A], Frequency [Hz], Control Enabled Flag, Current Raw[A]");
     first_run_flag = false;
   }
   else {
@@ -189,8 +192,8 @@ void printDebugStatements(){
     Serial.print(throttle_value); Serial.print(",");
     Serial.print(current_value); Serial.print(",");
     Serial.print(freq); Serial.print(",");
-    Serial.print(controlEnabled); Serial.print(",");
-    Serial.print(current_value_real);
+    Serial.print(controlEnabledFlag); Serial.print(",");
+    Serial.print(current_value_raw);
     Serial.println();
   }
 }
@@ -214,46 +217,22 @@ float calculateCurrentOffset(int numOfSamples){
   return currentOffset;
 }
 
-// Function to interpolate linearly between given timestamps and percentage values
-int interpolate(long timestamp[], int percentage[], int arraySize, int currentTime) {
-
-  // Ensure current time is within the range of timestamps
-  if (currentTime <= timestamp[0]) {
-    return percentage[0];
-  }
-  if (currentTime >= timestamp[arraySize - 1]) {
-    return percentage[arraySize - 1];
-  }
-  
-  // Find the index of the first timestamp greater than or equal to current time
-  int index = 0;
-  while (index < arraySize && timestamp[index] < currentTime) {
-    index++;
-  }
-
-  // Interpolate between the two closest timestamps
-  float timeFraction = (float)(currentTime - timestamp[index - 1]) / (timestamp[index] - timestamp[index - 1]);
-  int interpolatedPercentage = percentage[index - 1] + timeFraction * (percentage[index] - percentage[index - 1]);
-  return interpolatedPercentage;
-}
 
 void controlChangeEvent() {
   if (digitalRead(CONTROL_PIN) == HIGH) {
     controlPulseStart = micros();
   } else {
-    	unsigned long control_pulse_width = micros() - controlPulseStart;
-      // Serial.println(control_pulse_width);
-      if (control_pulse_width >= CONTROL_ENABLE_THREASHOLD)
-        controlEnabled = true;
-      else
-        controlEnabled = false;
+    unsigned long control_pulse_width = micros() - controlPulseStart;
+    if (control_pulse_width >= CONTROL_ENABLE_THREASHOLD)
+      controlEnabledFlag = true;
+    else
+      controlEnabledFlag = false;
   }
 
 }
 
 
 void fastPulseIn() {
-  // Serial.println("interrupt runninggggggggggggggggg");
   if (digitalRead(RECEIVE_PIN) == HIGH) {
     pulseInTimeBegin = micros();
     newPulseDurationAvailable = false;
@@ -265,23 +244,20 @@ void fastPulseIn() {
 }
 
 
-
-float updateAndAverage(float last_u[], float newNumber) {
-  // Shift elements to the left to remove the last element
-  for (int i = 0; i < ARRAY_SIZE - 1; i++) {
-    last_u[i] = last_u[i + 1];
-  }
-  // Add the new number at the end of the array
-  last_u[ARRAY_SIZE - 1] = newNumber;
+float updateAndAverage(float last_c[], int *buffer_index, float newNumber) {
+  // Add the new number at the current buffer index
+  last_c[*buffer_index] = newNumber;
+  // Shift the buffer index
+  *buffer_index = (*buffer_index + 1) % MA_WINDOW_SIZE;
 
   // Calculate the sum of the elements
   float sum = 0;
-  for (int i = 0; i < ARRAY_SIZE; i++) {
-    sum += last_u[i];
+  for (int i = 0; i < MA_WINDOW_SIZE; i++) {
+    sum += last_c[i];
   }
   
   // Calculate the average
-  float average = sum / ARRAY_SIZE;
+  float average = sum / MA_WINDOW_SIZE;
   
   return average;
 }

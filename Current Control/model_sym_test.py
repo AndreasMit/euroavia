@@ -69,7 +69,8 @@ error_prev = 0
 
 # MAIN WHILE LOOP --------------------------------------------
 
-TARGET = 28
+TARGET = 25
+CTRL_CENTER_U = 0.85
 int_sum = 0
 
 model.burn()
@@ -91,7 +92,7 @@ for k in range(1, len(time)-1):
         if first_time_control_flag:
             int_sum = 0
             first_time_control_flag = False
-        Uc[k] = 0.85 + 0.01*error + 0.1*int_sum + 0.0003*de_dt
+        Uc[k] = CTRL_CENTER_U + 0.008*error + 0.01*int_sum + 0*de_dt
     else:
         first_time_control_flag = True
         Uc[k] = U[k]

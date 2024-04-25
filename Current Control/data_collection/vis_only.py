@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-file_name = "measurements/test_with_rc_1.csv"
+file_name = "measurements/test_with_simulation_25A_Working_mat.csv"
 # file_name = "measurements/test5.csv"
 
 # Load data from CSV file
@@ -19,7 +19,9 @@ plt.grid()
 
 plt.figure()
 plt.title("Output")
+plt.plot(data[:, 0], data[:, 5], 'r-')
 plt.plot(data[:, 0], data[:, 2], 'b-')
+plt.axhline(y=25, color='k', linestyle='--', alpha=0.5, label='Target')
 plt.grid()
 
 plt.figure()

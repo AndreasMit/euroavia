@@ -36,7 +36,7 @@ U[30:] = 1
 Y = np.zeros(time.shape)
 
 # MAIN WHILE LOOP --------------------------------------------
-TARGET = 28
+TARGET = 25
 
 model.burn()
 
@@ -48,7 +48,7 @@ for k in range(len(time)):
     p_t = time_module.time()
 
     # Change target real time
-    TARGET = 25 + 10*np.sin(2*np.pi*0.5*time[k])
+    TARGET = 25
 
     if k % USE_FROM_HORIZON == 0:
         u_found = mpc_controller.optimize(target=TARGET)
