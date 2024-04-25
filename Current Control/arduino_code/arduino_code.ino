@@ -5,7 +5,7 @@
 #define TARGET_FREQUENCY 250
 
 #define TARGET 25
-#define CTRL_CENTER_U 0.85
+#define CTRL_CENTER_U 0.8
 
 
 Servo motor;
@@ -49,6 +49,7 @@ float last_c_measured[MA_WINDOW_SIZE] = {0};
 unsigned long time_now = 0;
 unsigned long time_before = 0;
 bool first_run_flag = true;
+bool test_var = false;
 
 
 // Setup ----------------------------------------
@@ -113,6 +114,7 @@ void loop() {
     throttle_value = map(pulse_width, 1000, 2000, 1000, 2000);
   }
 
+  throttle_value = constrain(throttle_value, 1000, 2000);
 
 
   // CONTROL LOGIC -------------------------------
@@ -121,7 +123,6 @@ void loop() {
     // Turn on the builtin LED
     digitalWrite(LED_BUILTIN, HIGH);  // turn the LED on (HIGH is the voltage level)
 
-    throttle_value = constrain(throttle_value, 1000, 2000);
     throttle_value_01 = float(throttle_value - 1000)/1000;
     float uc = 0;
     float dt = 1/freq;  // [s]
@@ -129,14 +130,16 @@ void loop() {
     error = TARGET - current_value;
     float de_dt = (error - prev_error)/dt;
     int_sum += error*dt;
+    if (first_time_control_flag){int_sum = 0;}
 
+    test_var = first_time_control_flag;
 
-    if (current_value > TARGET || (current_value < TARGET && throttle_value_01 > 0.7)){
+    if (current_value > TARGET || (current_value < TARGET && throttle_value_01 > 0.6)){
       if (first_time_control_flag){
         int_sum = 0;
         first_time_control_flag = false;
       }
-      uc = CTRL_CENTER_U + 0.008*error + 0.01*int_sum + 0*de_dt;
+      uc = CTRL_CENTER_U + 0.008*error + 0.055*int_sum;
       
     }
     else {
@@ -145,14 +148,16 @@ void loop() {
     }
 
     if (uc > throttle_value_01){
-      first_time_control_flag = true;
+      // first_time_control_flag = true;
       uc = throttle_value_01;
+    }
+    if (current_value < TARGET - 5){
+      first_time_control_flag = true;
     }
 
     uc = constrain(uc, 0, 1);
 
-    throttle_value_01 = uc;
-    throttle_value = constrain(int(throttle_value_01 * 1000 + 1000), 1000, 2000);
+    throttle_value = constrain(int(uc * 1000 + 1000), 1000, 2000);
     
   }
   else {
@@ -184,7 +189,7 @@ void loop() {
 
 void printDebugStatements(){
   if (first_run_flag) {
-    Serial.println("Time[ms], Throttle[1000 -> 2000], Current_MA[A], Frequency [Hz], Control Enabled Flag, Current Raw[A]");
+    Serial.println("Time[ms], Throttle[1000 -> 2000], Current_MA[A], Frequency [Hz], Control Enabled Flag, Current Raw[A], Int Sum, TestVal");
     first_run_flag = false;
   }
   else {
@@ -193,7 +198,9 @@ void printDebugStatements(){
     Serial.print(current_value); Serial.print(",");
     Serial.print(freq); Serial.print(",");
     Serial.print(controlEnabledFlag); Serial.print(",");
-    Serial.print(current_value_raw);
+    Serial.print(current_value_raw); Serial.print(",");
+    Serial.print(int_sum); Serial.print(",");
+    Serial.print(test_var?1:0);
     Serial.println();
   }
 }

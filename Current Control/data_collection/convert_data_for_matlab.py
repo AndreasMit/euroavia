@@ -1,10 +1,13 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import sys
 
-file_name = "measurements/test_with_simulation_25A_Working_new.csv"
+# Filename without extension
+# file_name = "measurements/2024_04_25/test_24"
+file_name = sys.argv[1]
 
 # Load data from CSV file
-data = np.genfromtxt(file_name, delimiter=',', dtype=str, skip_header=6)
+data = np.genfromtxt(f"{file_name}.csv", delimiter=',', dtype=str, skip_header=10)
 
 # Remove double quotes from each element in the array
 data = np.char.strip(data, '"')
@@ -14,5 +17,6 @@ data = data.astype(float)
 print(data)
 print(data.shape)
 
-# Save data to csv with same name but with numpy
-np.savetxt('measurements/test_with_simulation_25A_Working_new_mat.csv', data, delimiter=',', fmt='%f')
+# Save data to csv file
+np.savetxt(f"{file_name}_mat.csv", data, delimiter=',', fmt='%f')
+print(f"Data converted and saved to {file_name}_mat.csv.")

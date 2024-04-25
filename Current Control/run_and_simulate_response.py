@@ -20,8 +20,26 @@ data_points_model = deque(maxlen=1000)  # Adjust the maxlen as needed for your a
 data_points_time = deque(maxlen=1000)  # Adjust the maxlen as needed for your application
 data_points_throttle_measured = deque(maxlen=1000)  # Adjust the maxlen as needed for your application
 
-# Open CSV file for writing
-file_name = "measurements/test_with_simulation_25A_Working_new_2.csv"
+# Function to generate filename based on date and number run on that date
+def generate_filename():
+    import datetime
+    import os
+    today = datetime.date.today()
+    file_num = 1
+    while True:
+        # data with underscores instead of -
+        today = str(today).replace("-", "_")
+        folder_name = f"measurements/{today}"
+        file_name = f"{folder_name}/test_{file_num}.csv"
+        if not os.path.exists(folder_name):
+            os.makedirs(folder_name)
+            return file_name
+        if not os.path.exists(file_name):
+            return file_name
+        file_num += 1
+
+file_name = generate_filename()
+print(f"Saving data to {file_name}")
 csv_file = open(file_name, 'w', newline='')
 csv_writer = csv.writer(csv_file)
 
@@ -47,6 +65,20 @@ line_throttle, = axs[0].plot([], [])  # Empty plot for now
 line_measured, = axs[1].plot([], [], label="Measurement")  # Empty plot for now
 line_measured_real, = axs[1].plot([], [], label="Real Measurement")  # Empty plot for now
 line_model, = axs[1].plot([], [], label="Model Prediction")  # Empty plot for now
+
+# Maximize the window on Windows OS
+# Show the plot
+plt.show(block=False)  # Open the plot window without blocking
+
+# Get the current figure's manager
+figManager = plt.get_current_fig_manager()
+
+# Maximize the window using PyQt's method
+if figManager.window is not None:
+    figManager.window.showMaximized()
+else:
+    print("Failed to maximize the window: No window manager found.")
+
 
 # Set plot labels and title
 axs[0].set_xlabel('Time')
@@ -120,8 +152,31 @@ try:
         iter_num += 1
 
 except KeyboardInterrupt:
-    # Close serial connection and CSV file when KeyboardInterrupt (Ctrl+C) is detected
-    print("Keyboard Interrupt detected. Closing serial connection and CSV file.")
+    print("Keyboard Interrupt detected. Closing serial connection.")
     ser.close()
     csv_file.close()
+    
+    import os
+    file_name_no_ext = file_name.split(".")[0]
+
+    # Ask for save
+    save_q = input("Do you want to save the experiment? [/n]: ")
+    if save_q.lower() == "n":
+        print("Experiment not saved. Exiting...")
+        # remove the file
+        os.remove(f"{file_name_no_ext}.csv")
+    else:
+        # Close serial connection and CSV file when KeyboardInterrupt (Ctrl+C) is detected
+        print(f"Saving data to {file_name}...")
+        
+        # Run convert__data_for_matlab.py with file_name as argument
+        os.system(f"python data_collection/convert_data_for_matlab.py \"{file_name_no_ext}\"")
+
+        # ask for user input notes to the experiment, if given write to txt file, else if just pressed enter dont
+        notes = input("Enter notes for the experiment: ")
+        if notes:
+            with open(f"{file_name_no_ext}.txt", "w") as f:
+                f.write(notes)
+            print(f"Notes saved to {file_name_no_ext}.txt")
+
 
