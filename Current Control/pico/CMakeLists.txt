@@ -12,6 +12,8 @@ add_executable(${PROJECT_NAME}
 	./src/main.c
 	./src/current.c
 	./src/hermes.c
+	./src/receiver.c
+	./src/control.c
 	)
 
 target_link_libraries(hermes_vi pico_stdlib hardware_adc pico_multicore pico_sync)

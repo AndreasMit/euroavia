@@ -3,6 +3,7 @@
 #include "hardware/gpio.h"
 #include "hardware/adc.h"
 #include "pico/sync.h"
+#include "pico/time.h"
 #include "current.h"
 #include "hermes.h"
 
@@ -18,6 +19,42 @@
     #error "Resistance has not been declares. Thus cannot convert voltage to current."
 #endif
 
+#ifdef MA_FILTER
+    #ifndef MA_WINDOW_SIZE
+        #error "MA_WINDOW_SIZE must be defined when MA_FILTER is defined"
+    #endif
+#endif
+
+#ifdef MA_FILTER
+    static float ma_current_buffer[MA_WINDOW_SIZE] = {0};
+    static uint16_t ma_buffer_index = 0;
+#endif
+
+
+#ifdef MA_FILTER
+
+    /*
+    1) get average.
+    2) Pop first element    
+    */
+    float get_average_current(float newValue) {
+        float sum = 0, average = 0;
+        uint16_t samples_size = (ma_buffer_index > MA_WINDOW_SIZE) ? MA_WINDOW_SIZE : (ma_buffer_index+1);
+        
+        ma_current_buffer[ma_buffer_index % MA_WINDOW_SIZE] = newValue;
+
+        for (uint16_t i = 0; i < samples_size; ++i) {
+            sum += ma_current_buffer[i];
+        }
+        
+        ++ma_buffer_index;
+
+        average = sum / samples_size;
+        return average;
+    }
+
+
+#endif
 
 /*  Initialise ADC for voltage measurement  */
 void init_current() {
@@ -34,7 +71,7 @@ void init_current() {
 float adc_to_current() {
     const float conversion_factor = 3.3f / (1 << 12);
     uint16_t result = adc_read();
-    float current = result * conversion_factor;
+    float current = result * conversion_factor / RESISTANCE;
     // printf("Current from adc_to_current: %f\n", current);
     return current;
 }
@@ -43,5 +80,7 @@ float adc_to_current() {
 void update_current_blocking(float current, hermes_state *hermes) {
     mutex_enter_blocking(&hermes->lock); // Enter critical section
     hermes->current = current;
+    hermes->previous_sample_time = hermes->sample_time;
+    hermes->sample_time = to_us_since_boot(get_absolute_time());
     mutex_exit(&hermes->lock); // Exit critical section
 }

@@ -6,6 +6,17 @@
 #include "pico/multicore.h"
 
 
+extern hermes_state hermes;
+
+/*  Initialise hermes state struct. THIS MUST BE CALLED BEFORE INITIALISING CORE1!  */
+void initialise_hermes_state() {
+    hermes.current = 0.0;
+    hermes.throttle = 0;
+    hermes.control_enabled = false;
+    hermes.previous_sample_time = 0;
+    hermes.sample_time = 0;
+    mutex_init(&hermes.lock);
+}
 
 
 float get_current_value(hermes_state *hermes) {
