@@ -8,8 +8,8 @@
 #define FREE_RUNNING true
 #define RESISTANCE  0.04
 
-#define MA_FILTER
-#define MA_WINDOW_SIZE  10
+// #define MA_FILTER
+// #define MA_WINDOW_SIZE  10
 
 void init_current();
 float adc_to_current();

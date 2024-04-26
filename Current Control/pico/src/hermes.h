@@ -6,6 +6,12 @@
 
 #define DEBUG_MODE /* Running in debugging mode  (prints and stuff...)  */
 
+enum Control_Level {
+    NO_CONTROL,         // No control
+    LOW_CONTROL,        // 27A
+    HIGH_CONTROL,       // 30A
+};
+
 #define constrain(amt,low,high) ((amt)<(low)?(low):((amt)>(high)?(high):(amt)))
 
 typedef struct _hermes_state {
@@ -14,7 +20,8 @@ typedef struct _hermes_state {
     volatile bool control_enabled;
     mutex_t lock;   // must be captured before accessing current!!!!
     uint64_t sample_time;
-    uint64_t previous_sample_time; 
+    uint64_t previous_sample_time;
+    enum Control_Level control_type;
 } hermes_state;
 
 // void initialise_all(hermes_state *hermes);

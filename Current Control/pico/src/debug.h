@@ -15,6 +15,8 @@ typedef struct _debug_vars {
     bool control_enabled;
     int32_t time_now;
     float integral_sum;
+    enum Control_Level control_type;
+    bool change_control_state;
     mutex_t lock;
 } debug_vars;
 

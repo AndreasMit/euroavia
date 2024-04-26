@@ -9,9 +9,8 @@
 #define RECEIVE_PIN     3
 
 
-#define CONTROL_THRESHOLD 1700
-#define CONTROL_RANGE   50
-
+#define LOW_CONTROL_THREASHOLD   1400
+#define CONTROL_RANGE   150
 
 // If something goes wrong with the throttle output value
 #define DEAD_ZONE_THROTTLE 1000 

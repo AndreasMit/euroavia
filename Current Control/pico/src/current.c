@@ -41,17 +41,15 @@
 
     float get_average_current(float newValue) {
         float sum = 0, average = 0;
-        uint16_t samples_size = (ma_buffer_index > MA_WINDOW_SIZE) ? MA_WINDOW_SIZE : (ma_buffer_index+1);
+        // uint16_t samples_size = (ma_buffer_index > MA_WINDOW_SIZE) ? MA_WINDOW_SIZE : (ma_buffer_index+1);
         
-        ma_current_buffer[ma_buffer_index % MA_WINDOW_SIZE] = newValue;
+        ma_current_buffer[ma_buffer_index++ % MA_WINDOW_SIZE] = newValue;
 
-        for (uint16_t i = 0; i < samples_size; ++i) {
+        for (uint16_t i = 0; i < MA_WINDOW_SIZE; ++i) {
             sum += ma_current_buffer[i];
         }
-        
-        ++ma_buffer_index;
 
-        average = sum / samples_size;
+        average = sum / MA_WINDOW_SIZE;
         return average;
     }
 

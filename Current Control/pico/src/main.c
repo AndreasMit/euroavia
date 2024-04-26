@@ -88,28 +88,32 @@ int main() {
     float current;
     int64_t throttle;
     bool previous_control_enabled = hermes.control_enabled;
+    enum Control_Level previous_control_level = hermes.control_type;
+
     while (1) {
-        /*  Update hermes status values BEGIN   */
-        // get_control_status(&hermes);
-        // get_throttle_value(&hermes);
+
         current = get_current_value(&hermes); // this must aqcuire lock first.
-        /*  Update hermes status values END */
-        // printf("CONTROL ENABLED: %d\n", hermes.control_enabled);
         throttle = hermes.throttle;
-        if (!hermes.control_enabled) {
-            // printf("%f, %u, %d\n", current, throttle, hermes.control_enabled);
-            previous_control_enabled = false;
-        }
+
+        if (hermes.control_type == NO_CONTROL) 
+            previous_control_level = NO_CONTROL;
         else {
-            throttle = control_throttle(&hermes, !previous_control_enabled);
-            previous_control_enabled = true;
+            #ifdef DEBUG_MODE
+                debug_statements.change_control_state = (previous_control_level != hermes.control_type); 
+            #endif
+            throttle = control_throttle(&hermes, (previous_control_level != hermes.control_type));
         }
 
         #ifdef DEBUG_MODE
             debug_statements.time_now = to_ms_since_boot(get_absolute_time());
             debug_statements.throttle = throttle;
             debug_statements.control_enabled = hermes.control_enabled;
+            debug_statements.control_type = hermes.control_type;
         #endif
+
+
+        previous_control_level = hermes.control_type;
+        
 
         /*  Write PWM pulse logic here  */
         write_microseconds(throttle);

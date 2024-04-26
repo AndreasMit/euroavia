@@ -15,6 +15,7 @@ void initialise_hermes_state() {
     hermes.control_enabled = false;
     hermes.previous_sample_time = 0;
     hermes.sample_time = 0;
+    hermes.control_type = NO_CONTROL;
     mutex_init(&hermes.lock);
 }
 

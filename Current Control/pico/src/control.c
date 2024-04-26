@@ -11,8 +11,12 @@
     extern debug_vars debug_statements;
 #endif
 
-#ifndef TARGET
-    #error "Control target undefined!"
+#ifndef TARGET_LOW
+    #error "Target LOW undefined!"
+#endif
+
+#ifndef TARGET_HIGH
+    #error "Target HIGH undefined!"
 #endif
 
 #ifndef KP
@@ -41,17 +45,24 @@ uint16_t control_throttle(hermes_state *hermes, bool first_time_control_flag) {
 
     // Control logic below...
 
+    const float target = (hermes->control_type == HIGH_CONTROL) ? TARGET_HIGH : TARGET_LOW;
+    const float ctrl_center = (hermes->control_type == HIGH_CONTROL) ? CTRL_CENTER_U_HIGH : CTRL_CENTER_U_LOW;
+
     // if this is the first control loop make sure integral sum is 0
     if (first_time_control_flag)
         integral_sum = 0;
 
     throttle_value_01 = (throttle - (float)THROTTLE_MIN) / (float)(THROTTLE_MAX - THROTTLE_MIN);
 
-    error = TARGET - current;
+    error = target - current;
     integral_sum += error*dt;
 
-    if (current > TARGET || (current < TARGET && throttle_value_01 > 0.6))
-        uc = CTRL_CENTER_U + KP * error + KI * integral_sum;
+    #ifdef DEBUG_MODE
+        debug_statements.integral_sum = integral_sum;
+    #endif
+
+    if (current > target || (current < target && throttle_value_01 > 0.6))
+        uc = ctrl_center + KP * error + KI * integral_sum;
     else {
         integral_sum = 0;
         uc = throttle_value_01;
@@ -60,15 +71,12 @@ uint16_t control_throttle(hermes_state *hermes, bool first_time_control_flag) {
     if (uc > throttle_value_01)
         uc  = throttle_value_01;
 
-    if (current < TARGET - 5)
-        integral_sum = 0;
+    // if (current < target * 0.5)
+        // integral_sum = 0;
 
     uc = constrain(uc, 0, 1);
     throttle = constrain((int)(uc * 1000 + 1000), 1000, 2000);
 
-    #ifdef DEBUG_MODE
-        debug_statements.integral_sum = integral_sum;
-    #endif
 
     return throttle;
 }

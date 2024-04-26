@@ -14,10 +14,6 @@
     #error "RECEIVE_PIN is not defined!"
 #endif
 
-#ifndef CONTROL_THRESHOLD
-    #error "CONTROL ENABLE threshold has not been defined!"
-#endif
-
 
 extern hermes_state hermes;
 
@@ -27,7 +23,7 @@ volatile absolute_time_t control_pin_end = 0;
 volatile absolute_time_t receive_pin_start = 0;
 volatile absolute_time_t receive_pin_end = 0;
 
-const uint LED_PIN = 25;
+const uint8_t LED_PIN = 25;
 
 /*  For some reason pico only allows 1 interrupt handler.
 So pin will be passed as a param. */
@@ -45,8 +41,15 @@ void interrupt_handler(uint8_t gpio, uint32_t events) {
                     return;
 
                 control_pin_end = to_us_since_boot(get_absolute_time());
-                hermes.control_enabled = (control_pin_end - control_pin_start) >= CONTROL_THRESHOLD - CONTROL_RANGE;
-                gpio_put(LED_PIN, (bool)((control_pin_end - control_pin_start) >= CONTROL_THRESHOLD - CONTROL_RANGE));
+                // hermes.control_enabled = (control_pin_end - control_pin_start) >= CONTROL_THRESHOLD - CONTROL_RANGE;
+                absolute_time_t pulse_duration = control_pin_end - control_pin_start;
+
+                hermes.control_type = (pulse_duration >= LOW_CONTROL_THREASHOLD + CONTROL_RANGE) ? HIGH_CONTROL:
+                (pulse_duration <= LOW_CONTROL_THREASHOLD - CONTROL_RANGE) ? NO_CONTROL:
+                ((pulse_duration >= LOW_CONTROL_THREASHOLD - CONTROL_RANGE) && (pulse_duration <= LOW_CONTROL_THREASHOLD + CONTROL_RANGE)) ? LOW_CONTROL
+                : NO_CONTROL;
+                
+                gpio_put(LED_PIN, (bool)((control_pin_end - control_pin_start) >= LOW_CONTROL_THREASHOLD - CONTROL_RANGE));
             }
 
             break;
