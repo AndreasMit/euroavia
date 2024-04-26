@@ -71,8 +71,8 @@ uint16_t control_throttle(hermes_state *hermes, bool first_time_control_flag) {
     if (uc > throttle_value_01)
         uc  = throttle_value_01;
 
-    // if (current < target * 0.5)
-        // integral_sum = 0;
+    if (current < target * 0.5)
+        integral_sum = 0;
 
     uc = constrain(uc, 0, 1);
     throttle = constrain((int)(uc * 1000 + 1000), 1000, 2000);
