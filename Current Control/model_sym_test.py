@@ -69,8 +69,8 @@ error_prev = 0
 
 # MAIN WHILE LOOP --------------------------------------------
 
-TARGET = 25
-CTRL_CENTER_U = 0.85
+TARGET = 20
+CTRL_CENTER_U = 0.75
 int_sum = 0
 
 model.burn()

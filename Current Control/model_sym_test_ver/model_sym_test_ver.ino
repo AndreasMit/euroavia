@@ -212,11 +212,11 @@ void loop() {
   // throttle_value = map(pulse_width, 1000, 2000, 0, 1);
 
   // Control Logic Here
-  error = float(TARGET) - current_value;
+  error = float(TARGET_HIGH) - current_value;
   de_dt = (error - error_prev) / dt;
   int_sum += error * dt;
 
-  if (current_value > TARGET || (current_offset < TARGET && throttle_value > 0.7)) {
+  if (current_value > TARGET_HIGH || (current_offset < TARGET_HIGH && throttle_value > 0.7)) {
     if (first_time_control_flag) {
       int_sum = 0;
       first_time_control_flag = false;
