@@ -7,6 +7,10 @@
 #include "current.h"
 #include "hermes.h"
 
+#ifdef DEBUG_MODE
+    #include "debug.h"
+#endif
+
 #ifndef ADC_INPUT
     #error "Make sure ADC input is declared in source code."
 #endif
@@ -24,6 +28,8 @@
         #error "MA_WINDOW_SIZE must be defined when MA_FILTER is defined"
     #endif
 #endif
+
+
 
 #ifdef MA_FILTER
     static float ma_current_buffer[MA_WINDOW_SIZE] = {0};
@@ -67,12 +73,23 @@ void init_current() {
     // adc_run(FREE_RUNNING);
 }
 
+
+#ifdef DEBUG_MODE
+    extern debug_vars debug_statements;
+#endif
+
 /*  Gets current from adc   */
 float adc_to_current() {
     const float conversion_factor = 3.3f / (1 << 12);
     uint16_t result = adc_read();
     float current = result * conversion_factor / RESISTANCE;
-    // printf("Current from adc_to_current: %f\n", current);
+    
+    #ifdef DEBUG_MODE
+        mutex_enter_blocking(&debug_statements.lock);
+        debug_statements.current_value_raw = current;
+        mutex_exit(&debug_statements.lock);
+    #endif
+    
     return current;
 }
 

@@ -4,6 +4,7 @@
 #include "pico/stdlib.h"
 #include "pico/sync.h"
 
+#define DEBUG_MODE /* Running in debugging mode  (prints and stuff...)  */
 
 #define constrain(amt,low,high) ((amt)<(low)?(low):((amt)>(high)?(high):(amt)))
 

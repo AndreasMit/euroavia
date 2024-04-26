@@ -6,6 +6,10 @@
 #include "pico/sync.h"
 #include "pico/time.h"
 
+#ifdef DEBUG_MODE
+    #include "debug.h"
+    extern debug_vars debug_statements;
+#endif
 
 #ifndef TARGET
     #error "Control target undefined!"
@@ -62,6 +66,10 @@ uint16_t control_throttle(hermes_state *hermes, bool first_time_control_flag) {
     uc = constrain(uc, 0, 1);
     throttle = constrain((int)(uc * 1000 + 1000), 1000, 2000);
 
-    printf("time: %lu, dt: %f, current: %f, throttle: %u, integral_sum: %f\n", to_ms_since_boot(get_absolute_time()), dt, current, throttle, integral_sum);
+    #ifdef DEBUG_MODE
+        debug_statements.integral_sum = integral_sum;
+    #endif
+
+    // printf("time: %lu, dt: %f, current: %f, throttle: %u, integral_sum: %f\n", to_ms_since_boot(get_absolute_time()), dt, current, throttle, integral_sum);
     return throttle;
 }
