@@ -1,12 +1,17 @@
 #include <Servo.h>
 #include <ADS1X15.h>
 
-#define CONTROL_ENABLE_THREASHOLD 1700
 #define TARGET_FREQUENCY 250
 
-#define TARGET 25
-#define CTRL_CENTER_U 0.8
+#define TARGET_LOW 20          // ControlEnabledFlag = 1
+#define CTRL_CENTER_U_LOW 0.75
+#define TARGET_HIGH 25         // ControlEnabledFlag = 2
+#define CTRL_CENTER_U_HIGH 0.8
+float target = 0;
 
+#define KP_GAIN 0.008
+#define KI_GAIN 0.055
+#define KD_GAIN 0.0
 
 Servo motor;
 ADS1015 ADS(0x48);
@@ -15,7 +20,7 @@ ADS1015 ADS(0x48);
 volatile unsigned long pulseInTimeBegin = micros();
 volatile unsigned long pulseInTimeEnd = micros();
 volatile bool newPulseDurationAvailable = false;
-volatile bool controlEnabledFlag = false;
+volatile int control_switch_pos = 0;
 volatile unsigned long controlPulseStart = micros();
 // Pins Connected -------------------------------
 const uint8_t motor_esc_pin = A1;     // Writing PWM Throttle 
@@ -49,7 +54,6 @@ float last_c_measured[MA_WINDOW_SIZE] = {0};
 unsigned long time_now = 0;
 unsigned long time_before = 0;
 bool first_run_flag = true;
-bool test_var = false;
 
 
 // Setup ----------------------------------------
@@ -117,30 +121,39 @@ void loop() {
   throttle_value = constrain(throttle_value, 1000, 2000);
 
 
-  // CONTROL LOGIC -------------------------------
+  // CONTROL LOGIC -------------------------------------------------------------------
 
-  if (controlEnabledFlag){
+  if (control_switch_pos>0){
     // Turn on the builtin LED
     digitalWrite(LED_BUILTIN, HIGH);  // turn the LED on (HIGH is the voltage level)
 
+    // Map to 0 -> 1
     throttle_value_01 = float(throttle_value - 1000)/1000;
     float uc = 0;
     float dt = 1/freq;  // [s]
 
-    error = TARGET - current_value;
+    // Define Error - dE/dt - ΣeΔt
+    if (control_switch_pos == 1)
+      error = TARGET_LOW - current_value;
+      target = TARGET_LOW;
+    else if (control_switch_pos == 2)
+      error = TARGET_HIGH - current_value;
+      target = TARGET_HIGH;
+
     float de_dt = (error - prev_error)/dt;
     int_sum += error*dt;
     if (first_time_control_flag){int_sum = 0;}
 
-    test_var = first_time_control_flag;
 
-    if (current_value > TARGET || (current_value < TARGET && throttle_value_01 > 0.6)){
+    if (current_value > target || (current_value < target && throttle_value_01 > 0.6)){
       if (first_time_control_flag){
         int_sum = 0;
         first_time_control_flag = false;
       }
-      uc = CTRL_CENTER_U + 0.008*error + 0.055*int_sum;
-      
+      if (control_switch_pos == 1)
+        uc = CTRL_CENTER_U_LOW  + KP_GAIN*error + KI_GAIN*int_sum + KD_GAIN*de_dt;
+      else if (control_switch_pos == 2)
+        uc = CTRL_CENTER_U_HIGH + KP_GAIN*error + KI_GAIN*int_sum + KD_GAIN*de_dt;
     }
     else {
       first_time_control_flag = true;
@@ -151,7 +164,7 @@ void loop() {
       // first_time_control_flag = true;
       uc = throttle_value_01;
     }
-    if (current_value < TARGET - 5){
+    if (current_value < target * 0.5){
       first_time_control_flag = true;
     }
 
@@ -166,10 +179,12 @@ void loop() {
   }
 
 
-  // ---------------------------------------------
+  // -----------------------------------------------------------------------------
 
+  // Write Motor Speed to the ESC
   motor.writeMicroseconds(throttle_value);
 
+  // Frequency Calculation
   freq = 1000/(time_now - time_before);
 
   // PRINTING VALUES --------------------------------
@@ -189,7 +204,7 @@ void loop() {
 
 void printDebugStatements(){
   if (first_run_flag) {
-    Serial.println("Time[ms], Throttle[1000 -> 2000], Current_MA[A], Frequency [Hz], Control Enabled Flag, Current Raw[A], Int Sum, TestVal");
+    Serial.println("Time[ms], Throttle[1000 -> 2000], Current_MA[A], Frequency [Hz], Control Enabled Flag, Current Raw[A], I Term");
     first_run_flag = false;
   }
   else {
@@ -197,10 +212,9 @@ void printDebugStatements(){
     Serial.print(throttle_value); Serial.print(",");
     Serial.print(current_value); Serial.print(",");
     Serial.print(freq); Serial.print(",");
-    Serial.print(controlEnabledFlag); Serial.print(",");
+    Serial.print(control_switch_pos); Serial.print(",");
     Serial.print(current_value_raw); Serial.print(",");
-    Serial.print(int_sum); Serial.print(",");
-    Serial.print(test_var?1:0);
+    Serial.print(int_sum * KI_GAIN);
     Serial.println();
   }
 }
@@ -230,10 +244,15 @@ void controlChangeEvent() {
     controlPulseStart = micros();
   } else {
     unsigned long control_pulse_width = micros() - controlPulseStart;
-    if (control_pulse_width >= CONTROL_ENABLE_THREASHOLD)
-      controlEnabledFlag = true;
-    else
-      controlEnabledFlag = false;
+    if (control_pulse_width >= 1700) {
+      control_switch_pos = 2;
+    }
+    else if (control_pulse_width < 1700 && control_pulse_width > 1400) {
+      control_switch_pos = 1;
+    }
+    else {
+      control_switch_pos = 0;
+    }
   }
 
 }

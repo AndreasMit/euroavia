@@ -17,34 +17,40 @@ c_enabled_flag = data[:, 4]
 current_raw = data[:, 5]
 int_sum = (data[:, 6] * 0.055) * 1000 + 1000
 test_var = data[:, 7]
-kp_part = np.clip(thr - int_sum - 800, 0, 1000) + 1000
-# keep only the kp_part where test_var == false, else = 1000
-kp_part = np.where(c_enabled_flag == 0, kp_part, 1000)
 
 # Plot data
 fig, axs = plt.subplots(2, 1, figsize=(10, 7))
-axs[0].plot(time_s, thr, 'b-')
-axs[0].plot(time_s, int_sum, 'r-')
-axs[0].plot(time_s, test_var*1000 + 1000, 'g-')
-axs[0].plot(time_s, kp_part, 'y-')
-axs[0].set_title("Input")
-axs[0].grid()
-axs[0].set_ylim([900, 2100])
+axs[0].plot(time_s, thr, 'k-', label="Throttle")
+# axs[0].plot(time_s, int_sum, 'r-')
+# axs[0].plot(time_s, test_var*1000 + 1000, 'g-')
+axs[0].fill_between(time_s, 1000 + c_enabled_flag*1000,1000, color='lightgreen', alpha=0.35, label="Switched Control?")
 
-axs[1].plot(time_s, current_raw, 'r-', label="Raw Current")
-axs[1].plot(time_s, current_ma, 'b-', label="Filtered ARD")
-axs[1].plot(time_s, test_var*25, 'g-', label="Test Var")
+axs[0].set_ylabel("Throttle PWM") 
+axs[0].grid()
+axs[0].set_xlim([148, 207])
+axs[0].set_ylim([900, 2100])
+axs[0].legend()
+
+# axs[1].plot(time_s, current_raw, 'r-', label="Raw Current")
+axs[1].plot(time_s, current_ma, 'k-', label="Current Measurement")
+# axs[1].plot(time_s, test_var*25, 'g-', label="Test Var")
 axs[1].axhline(y=25, color='k', linestyle='--', alpha=0.5, label='Target')
-axs[1].set_title("Output")
+# Control enabled flag
+axs[1].fill_between(time_s, c_enabled_flag * 50, color='lightgreen', alpha=0.35)
 axs[1].set_ylabel("Current [A]")
 axs[1].set_xlabel("Time [s]")
-axs[1].legend()
-axs[1].grid()
+axs[1].set_xlim([148, 207])
+axs[1].set_ylim([-5, 40])
 
-plt.figure()
-plt.title("Sampling Frequency")
-plt.plot(time_ms, freq_measured, 'b-')
-plt.grid()
+# legend outside of the area
+# plt.legend(loc='upper right', bbox_to_anchor=(1, 1))
+axs[1].grid()
+axs[1].legend()
+
+# plt.figure()
+# plt.title("Sampling Frequency")
+# plt.plot(time_ms, freq_measured, 'b-')
+# plt.grid()
 
 # Mean Sampling Freq and Std
 mean_sampling_freq = np.mean(freq_measured)
