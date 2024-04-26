@@ -70,6 +70,5 @@ uint16_t control_throttle(hermes_state *hermes, bool first_time_control_flag) {
         debug_statements.integral_sum = integral_sum;
     #endif
 
-    // printf("time: %lu, dt: %f, current: %f, throttle: %u, integral_sum: %f\n", to_ms_since_boot(get_absolute_time()), dt, current, throttle, integral_sum);
     return throttle;
 }

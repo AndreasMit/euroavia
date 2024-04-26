@@ -32,17 +32,13 @@
 
 
 #ifdef MA_FILTER
-    static float ma_current_buffer[MA_WINDOW_SIZE] = {0};
+    static float ma_current_buffer[MA_WINDOW_SIZE] = {0.0};
     static uint16_t ma_buffer_index = 0;
 #endif
 
 
 #ifdef MA_FILTER
 
-    /*
-    1) get average.
-    2) Pop first element    
-    */
     float get_average_current(float newValue) {
         float sum = 0, average = 0;
         uint16_t samples_size = (ma_buffer_index > MA_WINDOW_SIZE) ? MA_WINDOW_SIZE : (ma_buffer_index+1);
@@ -69,8 +65,6 @@ void init_current() {
     adc_gpio_init(26);
     // Select ADC input
     adc_select_input(ADC_INPUT);
-    // enable/disable free running mode
-    // adc_run(FREE_RUNNING);
 }
 
 
@@ -93,7 +87,7 @@ float adc_to_current() {
     return current;
 }
 
-
+/*  Update current value of hermes state    */
 void update_current_blocking(float current, hermes_state *hermes) {
     mutex_enter_blocking(&hermes->lock); // Enter critical section
     hermes->current = current;

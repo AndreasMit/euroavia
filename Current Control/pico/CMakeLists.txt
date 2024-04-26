@@ -14,10 +14,11 @@ add_executable(${PROJECT_NAME}
 	./src/hermes.c
 	./src/receiver.c
 	./src/control.c
+	./src/pwm_gen.c
 	./src/debug.c
 	)
 
-target_link_libraries(hermes_vi pico_stdlib hardware_adc pico_multicore pico_sync)
+target_link_libraries(hermes_vi pico_stdlib hardware_adc pico_multicore pico_sync hardware_pwm)
 
 pico_add_extra_outputs(${PROJECT_NAME})
 

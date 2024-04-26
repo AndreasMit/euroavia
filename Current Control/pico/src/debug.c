@@ -1,11 +1,12 @@
 #include <stdio.h>
 #include "pico/stdlib.h"
 #include "pico/sync.h"
-#include "debug.h"
 #include "hermes.h"
+#include "debug.h"
 
 
 #ifdef DEBUG_MODE
+
 
 void initialise_debug_statements(debug_vars *debug_statements) {
         debug_statements->integral_sum = 0.0;

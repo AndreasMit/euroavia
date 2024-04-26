@@ -1,13 +1,12 @@
 #include <stdio.h>
 #include "pico/stdlib.h"
-#include "hermes.h"
 #include "pico/sync.h"
-#include "hermes.h"
-#include "current.h"
 #include "pico/multicore.h"
+#include "hermes.h"
 #include "receiver.h"
 #include "control.h"
-
+#include "pwm_gen.h"
+#include "current.h"
 
 #ifdef DEBUG_MODE
     #include "debug.h"
@@ -75,7 +74,8 @@ void initialise_all() {
     /*  Launch core1 to run core1_entry function    */
     multicore_launch_core1(core1_entry);
     
-
+    /*  Initialise pwm generator    */
+    init_pwm();
 }
 
 int main() {
@@ -112,6 +112,8 @@ int main() {
         #endif
 
         /*  Write PWM pulse logic here  */
+        write_microseconds(throttle);
+
 
         // ++counter2;
         #ifdef DEBUG_MODE
