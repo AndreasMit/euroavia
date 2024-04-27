@@ -3,16 +3,18 @@ import matplotlib.pyplot as plt
 import sys
 
 # Filename without extension
-# file_name = "measurements/2024_04_25/test_24"
-file_name = sys.argv[1]
+file_name = "measurements/2024_04_27/test_22"
+# file_name = sys.argv[1]
 
 # Load data from CSV file
 data = np.genfromtxt(f"{file_name}.csv", delimiter=',', dtype=str, skip_header=10)
 
 # Remove double quotes from each element in the array
 data = np.char.strip(data, '"')
+# print(data[1:10])
 # Convert array to float
 data = data.astype(float)
+# print(data[1:10])
 
 print(data)
 print(data.shape)

@@ -1,7 +1,9 @@
 import numpy as np
 
-input_file = "measurements/test_with_simulation_mat.csv"
-output_file = "measurements/test_with_simulation_rs_10ms.csv"
+# input_file = "measurements/test_with_simulation_mat.csv"
+# output_file = "measurements/test_with_simulation_rs_10ms.csv"
+input_file = "case.csv"
+output_file = "case_rs_6689.csv"
 
 # Load the data from CSV file
 data = np.loadtxt(input_file, delimiter=',')
@@ -9,7 +11,7 @@ data = np.loadtxt(input_file, delimiter=',')
 # Extract time, out, and in from the loaded data
 time = data[:, 0]
 inn = data[:, 1]
-out = data[:, 2]
+out = data[:, 5]
 
 # Calculate the time intervals between adjacent points
 time_intervals = np.diff(time)
@@ -18,7 +20,7 @@ print(f"Std time interval: {np.std(time_intervals):.2f} ms")
 
 
 # Define the constant time interval (deltat)
-deltat = 10 # milliseconds
+deltat = 1/6689*1000 # milliseconds
 # target_freq = 55  # Hz
 # deltat = 1 / target_freq * 1000  # milliseconds
 

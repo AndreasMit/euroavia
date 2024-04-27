@@ -5,9 +5,19 @@ import csv
 from ClassesAndFunctions import ZTranferFunction, HammersteinWiener
 from collections import deque
 
+# print available serial ports
+import serial.tools.list_ports
+ports = serial.tools.list_ports.comports()
+print("Available serial ports:")
+for port, desc, hwid in sorted(ports):
+    print(f"{port}: {desc} [{hwid}]")
+
+# print("Going to sleep...")
+# while(1):
+#     pass
 
 # Define serial port and baud rate
-serial_port = 'COM9'  # Change this to your serial port
+serial_port = 'COM10'  # Change this to your serial port
 baud_rate = 115200
 
 # Open serial connection
@@ -129,22 +139,23 @@ try:
             # thr = int(thr_[1])
             thr = thr_[1]
 
-            c_measured = float(thr_[2])
-            c_measured_real = float(thr_[5])
+            c_measured = float(thr_[5])
+            # c_measured_real = 0
+            c_measured_real = float(thr_[2])
 
-            # u = float(thr - 1000) / 1000
             u = float((int(thr) - 1000)) / 1000
-            c_predicted = model(u)
+            # c_predicted = model(u)
+            c_predicted = 0
             model_response = np.append(model_response, c_predicted)
 
             # Update plot
             data_points_measured.append(c_measured)
             data_points_measured_real.append(c_measured_real)
             data_points_model.append(c_predicted)
-            data_points_time.append(int(thr_[0])/1000)
+            data_points_time.append(int(thr_[0])/1e6)
             data_points_throttle_measured.append(float(u))
             
-            if iter_num % 45 == 0:
+            if iter_num % 70 == 0:
                 update_plot()
 
             # Write data to CSV file

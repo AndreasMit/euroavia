@@ -3,10 +3,11 @@
 
 #define TARGET_FREQUENCY 250
 
-#define TARGET_LOW 20          // ControlEnabledFlag = 1
+#define TARGET_LOW 20.0          // ControlEnabledFlag = 1
 #define CTRL_CENTER_U_LOW 0.75
-#define TARGET_HIGH 25         // ControlEnabledFlag = 2
+#define TARGET_HIGH 25.0         // ControlEnabledFlag = 2
 #define CTRL_CENTER_U_HIGH 0.8
+#define CURRENT_STD 0.5
 float target = 0;
 
 #define KP_GAIN 0.008
@@ -35,6 +36,7 @@ bool first_time_control_flag = true;
 float int_sum = 0;
 float error = 0;
 float prev_error = 0;
+float de_dt = 0;
 float dt = 0;
 float freq = 1;
 
@@ -44,10 +46,10 @@ int16_t current_adc_reading = 0;
 float current_value = 0;
 float current_value_raw = 0;
 float current_offset = 0;
+float current_std = 0;
 
 // Current Moving Average Filter
 #define MA_WINDOW_SIZE 10
-int buffer_index = 0;
 float last_c_measured[MA_WINDOW_SIZE] = {0};
 
 // Time Variables
@@ -84,7 +86,7 @@ void setup(){
   Serial.print("Data Rate : "); Serial.println(ADS.getDataRate());
 
   // Current Sensor Configuration
-  current_offset = calculateCurrentOffset(200);
+  calculateCurrentOffsetAndSTD(200, &current_offset, &current_std);
   Serial.println("Begging Data Collection in 2 Seconds...");
   delay(2000);
 
@@ -101,13 +103,13 @@ void loop() {
 
   // Time
   time_now = millis();
-
+  
 
   // READING CURRENT SENSOR ------------------------
   current_adc_reading = ADS.readADC_Differential_0_1(); //Raw data reading // 0 -> 4095
   current_value = ADS.toVoltage(current_adc_reading) / 0.04 - current_offset; //0.04V/A -->[A]
   current_value_raw = current_value;
-  current_value = updateAndAverage(last_c_measured, &buffer_index, current_value);
+  current_value = updateAndAverage(last_c_measured, current_value);
 
 
 
@@ -133,14 +135,16 @@ void loop() {
     float dt = 1/freq;  // [s]
 
     // Define Error - dE/dt - ΣeΔt
-    if (control_switch_pos == 1)
-      error = TARGET_LOW - current_value;
+    if (control_switch_pos == 1){
       target = TARGET_LOW;
-    else if (control_switch_pos == 2)
-      error = TARGET_HIGH - current_value;
+    }
+    else if (control_switch_pos == 2){
       target = TARGET_HIGH;
-
-    float de_dt = (error - prev_error)/dt;
+    }
+    target -= CURRENT_STD;
+    
+    error = target - current_value;
+    de_dt = (error - prev_error)/dt;
     int_sum += error*dt;
     if (first_time_control_flag){int_sum = 0;}
 
@@ -151,9 +155,9 @@ void loop() {
         first_time_control_flag = false;
       }
       if (control_switch_pos == 1)
-        uc = CTRL_CENTER_U_LOW  + KP_GAIN*error + KI_GAIN*int_sum + KD_GAIN*de_dt;
+        uc = CTRL_CENTER_U_LOW  + (error>0?0:KP_GAIN*error) + KI_GAIN*int_sum + (abs(error)>5?-KD_GAIN*de_dt:0);
       else if (control_switch_pos == 2)
-        uc = CTRL_CENTER_U_HIGH + KP_GAIN*error + KI_GAIN*int_sum + KD_GAIN*de_dt;
+        uc = CTRL_CENTER_U_HIGH + (error>0?0:KP_GAIN*error) + KI_GAIN*int_sum + (abs(error)>5?-KD_GAIN*de_dt:0);
     }
     else {
       first_time_control_flag = true;
@@ -176,6 +180,8 @@ void loop() {
   else {
     // Turn off the builtin LED
     digitalWrite(LED_BUILTIN, LOW);  // turn the LED on (HIGH is the voltage level)
+    first_time_control_flag = true;
+    error = 0;
   }
 
 
@@ -214,7 +220,9 @@ void printDebugStatements(){
     Serial.print(freq); Serial.print(",");
     Serial.print(control_switch_pos); Serial.print(",");
     Serial.print(current_value_raw); Serial.print(",");
-    Serial.print(int_sum * KI_GAIN);
+    Serial.print(int_sum * KI_GAIN); Serial.print(",");
+    Serial.print(error>0?0:KP_GAIN*error); Serial.print(",");
+    Serial.print((abs(error)>5?-KD_GAIN*de_dt:0));
     Serial.println();
   }
 }
@@ -222,20 +230,29 @@ void printDebugStatements(){
 
 
 
-float calculateCurrentOffset(int numOfSamples){
+void calculateCurrentOffsetAndSTD(int numOfSamples, float *current_offset, float *current_std){
   Serial.println("Calculating Current Offset...");
 
   float sum = 0;
+  float sum_diff_2 = 0;
+  float prev_measurement = 0;
+
+  bool first_time = true;
+
   for(int i = 0; i < numOfSamples; i++){
     int16_t raw_adc = ADS.readADC_Differential_0_1();
-    float voltage = ADS.toVoltage(raw_adc);
-    sum += voltage / 0.04;;
+    float current = ADS.toVoltage(raw_adc) / 0.04;
+    sum += current;
+    sum_diff_2 += first_time?0:(current - prev_measurement) * (current - prev_measurement);
+    first_time = false;
+    prev_measurement = current;
     delay(10);
   }
-  float currentOffset = sum / numOfSamples;
+  *current_offset = sum / numOfSamples;
+  *current_std = sqrt(sum_diff_2 / float(numOfSamples - 1));
 
-  Serial.print("Current Offset: "); Serial.println(currentOffset);
-  return currentOffset;
+  Serial.print("Current Offset: "); Serial.println(*current_offset);
+  Serial.print("Current STD: "); Serial.println(*current_std);
 }
 
 
@@ -270,11 +287,15 @@ void fastPulseIn() {
 }
 
 
-float updateAndAverage(float last_c[], int *buffer_index, float newNumber) {
+float updateAndAverage(float last_c[], float newNumber) {
+
+  // Define the buffer index
+  static int buffer_index = 0;
+  
   // Add the new number at the current buffer index
-  last_c[*buffer_index] = newNumber;
+  last_c[buffer_index] = newNumber;
   // Shift the buffer index
-  *buffer_index = (*buffer_index + 1) % MA_WINDOW_SIZE;
+  buffer_index = (buffer_index + 1) % MA_WINDOW_SIZE;
 
   // Calculate the sum of the elements
   float sum = 0;
