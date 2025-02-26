@@ -3,11 +3,13 @@
 
 #define TARGET_FREQUENCY 250
 
-#define TARGET_LOW 20.0          // ControlEnabledFlag = 1
-#define CTRL_CENTER_U_LOW 0.75
-#define TARGET_HIGH 25.0         // ControlEnabledFlag = 2
-#define CTRL_CENTER_U_HIGH 0.8
-#define CURRENT_STD 0.5
+
+#define TARGET_LOW 26.0       // ControlEnabledFlag = 1
+#define CTRL_CENTER_U_LOW 0.566
+#define TARGET_HIGH 30.0         // ControlEnabledFlag = 2
+#define CTRL_CENTER_U_HIGH 0.598
+#define CURRENT_STD 0.6
+
 float target = 0;
 
 #define KP_GAIN 0.008
@@ -31,6 +33,7 @@ const uint8_t CONTROL_PIN = 3;        // Reading Switch Status
 // Variables to store pulse width and throttle position
 unsigned long pulse_width;
 unsigned long throttle_value;
+unsigned long throttle_value_cmd;  // Raw throttle value received. Only used for logging purposes
 float throttle_value_01;
 bool first_time_control_flag = true;
 float int_sum = 0;
@@ -105,11 +108,17 @@ void loop() {
   time_now = millis();
   
 
+
+
+
   // READING CURRENT SENSOR ------------------------
   current_adc_reading = ADS.readADC_Differential_0_1(); //Raw data reading // 0 -> 4095
   current_value = ADS.toVoltage(current_adc_reading) / 0.04 - current_offset; //0.04V/A -->[A]
   current_value_raw = current_value;
   current_value = updateAndAverage(last_c_measured, current_value);
+
+
+
 
 
 
@@ -121,6 +130,10 @@ void loop() {
   }
 
   throttle_value = constrain(throttle_value, 1000, 2000);
+  throttle_value_cmd = throttle_value;
+
+
+
 
 
   // CONTROL LOGIC -------------------------------------------------------------------
@@ -210,7 +223,7 @@ void loop() {
 
 void printDebugStatements(){
   if (first_run_flag) {
-    Serial.println("Time[ms], Throttle[1000 -> 2000], Current_MA[A], Frequency [Hz], Control Enabled Flag, Current Raw[A], I Term");
+    Serial.println("Time[ms], Throttle[1000 -> 2000], Current_MA[A], Frequency [Hz], Control Enabled Flag, Current Raw[A], I Term, P Term, D Term, Throttle_RCVR [1000 -> 2000]");
     first_run_flag = false;
   }
   else {
@@ -222,7 +235,8 @@ void printDebugStatements(){
     Serial.print(current_value_raw); Serial.print(",");
     Serial.print(int_sum * KI_GAIN); Serial.print(",");
     Serial.print(error>0?0:KP_GAIN*error); Serial.print(",");
-    Serial.print((abs(error)>5?-KD_GAIN*de_dt:0));
+    Serial.print((abs(error)>5?-KD_GAIN*de_dt:0)); Serial.print(",");
+    Serial.print(throttle_value_cmd);
     Serial.println();
   }
 }

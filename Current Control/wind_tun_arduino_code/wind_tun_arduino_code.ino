@@ -31,6 +31,7 @@ const uint8_t CONTROL_PIN = 3;        // Reading Switch Status
 // Variables to store pulse width and throttle position
 unsigned long pulse_width;
 unsigned long throttle_value;
+unsigned long thottle_value_control;
 float throttle_value_01;
 bool first_time_control_flag = true;
 float int_sum = 0;
@@ -65,14 +66,15 @@ float percentage[]  = {1000,1000,1100,1100,1200,1200,1300,1300,1400,1400,1500,15
 
 // Convert timestamps to milliseconds
 unsigned long timestamp_ms[TIMESTAMP_NUM_CMDS] = {0};
-for (int i = 0; i < TIMESTAMP_NUM_CMDS; i++) {
-  timestamp_ms[i] = timestamp_s[i] * 1000;
-}
 
 
 // Setup ----------------------------------------
 
 void setup(){
+  // Convert timestamps to milliseconds
+  for (int i = 0; i < TIMESTAMP_NUM_CMDS; i++) {
+    timestamp_ms[i] = timestamp_s[i] * 1000;
+  }
 
   // Serial Configuration
   Serial.begin(115200); delay(1000);
@@ -134,6 +136,11 @@ void loop() {
 
   throttle_value = constrain(throttle_value, 1000, 2000);
   throttle_value = interpolatedPercentage(timestamp_ms, percentage, time_now);
+
+
+
+
+
 
   // CONTROL LOGIC -------------------------------------------------------------------
 
@@ -326,21 +333,21 @@ float updateAndAverage(float last_c[], float newNumber) {
 float interpolatedPercentage(unsigned long timestamp_ms[], float percentage[], unsigned long currentTime) {
 
   // Ensure current time is within the range of timestamps
-  if (currentTime <= timestamp[0]) {
+  if (currentTime <= timestamp_ms[0]) {
     return percentage[0];
   }
-  if (currentTime >= timestamp[TIMESTAMP_NUM_CMDS - 1]) {
+  if (currentTime >= timestamp_ms[TIMESTAMP_NUM_CMDS - 1]) {
     return percentage[TIMESTAMP_NUM_CMDS - 1];
   }
   
   // Find the index of the first timestamp greater than or equal to current time
   int index = 0;
-  while (index < TIMESTAMP_NUM_CMDS && timestamp[index] < currentTime) {
+  while (index < TIMESTAMP_NUM_CMDS && timestamp_ms[index] < currentTime) {
     index++;
   }
 
   // Interpolate between the two closest timestamps
-  float timeFraction = (float)(currentTime - timestamp[index - 1]) / (float)(timestamp[index] - timestamp[index - 1]);
+  float timeFraction = (float)(currentTime - timestamp_ms[index - 1]) / (float)(timestamp_ms[index] - timestamp_ms[index - 1]);
   float interpolatedPercentage = percentage[index - 1] + timeFraction * (percentage[index] - percentage[index - 1]);
   return interpolatedPercentage;
 }

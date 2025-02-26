@@ -17,7 +17,7 @@ for port, desc, hwid in sorted(ports):
 #     pass
 
 # Define serial port and baud rate
-serial_port = 'COM10'  # Change this to your serial port
+serial_port = 'COM13'  # Change this to your serial port
 baud_rate = 115200
 
 # Open serial connection
@@ -152,7 +152,7 @@ try:
             data_points_measured.append(c_measured)
             data_points_measured_real.append(c_measured_real)
             data_points_model.append(c_predicted)
-            data_points_time.append(int(thr_[0])/1e6)
+            data_points_time.append(int(thr_[0])/1e3)
             data_points_throttle_measured.append(float(u))
             
             if iter_num % 70 == 0:

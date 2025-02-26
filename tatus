@@ -1,0 +1,654 @@
+[33mcommit 4c1cf6c061c934f71e1d0833693f09371ed4d3c6[m[33m ([m[1;36mHEAD -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m
+Author: Myrtss <tsrgtk11@gmail.com>
+Date:   Wed Feb 19 15:45:45 2025 +0200
+
+    added MPU9250 arduino code
+
+[33mcommit 817d9796d5c1cf9a69975ce1a5234e545066c724[m
+Author: Myrtss <tsrgtk11@gmail.com>
+Date:   Wed Feb 19 15:37:46 2025 +0200
+
+    Myrto Test Commit
+
+[33mcommit a7a3268e90afcc6b0e111cacb372c736c4187089[m
+Author: AlexiosVavvas <alexios.vavvas@gmail.com>
+Date:   Sat Apr 27 20:12:10 2024 +0300
+
+    Office Codes from Office
+
+[33mcommit a34724bb257a31fa49ad1ef465dc517db3c8a7e5[m
+Author: KostasPik <kostas.pikoulas2002@gmail.com>
+Date:   Fri Apr 26 16:23:26 2024 -0400
+
+    Pico: small change in control code
+
+[33mcommit 981212ccb91ca2a76c3d272f7cba572cb690c7ce[m
+Merge: 67b8093 d5a3be4
+Author: KostasPik <kostas.pikoulas2002@gmail.com>
+Date:   Fri Apr 26 16:20:47 2024 -0400
+
+    Merge branch 'main' of https://github.com/AndreasMit/euroavia
+
+[33mcommit 67b80932a1126504ffc26d692a5aa5dae3289f64[m
+Author: KostasPik <kostas.pikoulas2002@gmail.com>
+Date:   Fri Apr 26 16:16:54 2024 -0400
+
+    Added 2 Targets
+
+[33mcommit d5a3be4a12fbd8bf712271d164893be1b3a28226[m
+Merge: d3dc016 6de47ef
+Author: AlexiosVavvas <alexios.vavvas@gmail.com>
+Date:   Fri Apr 26 19:20:29 2024 +0300
+
+    Merge branch 'main' of https://github.com/AndreasMit/euroavia
+
+[33mcommit d3dc01678d62aff80ba3003ffbe107b5ed5d2bf5[m
+Author: AlexiosVavvas <alexios.vavvas@gmail.com>
+Date:   Fri Apr 26 19:14:53 2024 +0300
+
+    Arduino code: Added double target support
+
+[33mcommit 6de47efd02361dc4b51be0f0fe2ca6d232f8147f[m
+Author: AlexiosVavvas <alexios.vavvas@gmail.com>
+Date:   Fri Apr 26 19:14:53 2024 +0300
+
+    Arduino code: Added double target support
+
+[33mcommit 63d96dc21d77e6c0f7bedcb8ff2a75b83a9b300e[m
+Author: KostasPik <kostas.pikoulas2002@gmail.com>
+Date:   Fri Apr 26 07:47:50 2024 -0400
+
+    Added pwm signal generator
+
+[33mcommit 0a23e8c6d8cd3233666e0afbec1ca1ad717f3110[m
+Author: KostasPik <kostas.pikoulas2002@gmail.com>
+Date:   Thu Apr 25 20:01:45 2024 -0400
+
+    Added debug statements for pico
+
+[33mcommit 11597cf6fe807df0ee759dd81e5959b0b967ca7f[m
+Author: KostasPik <kostas.pikoulas2002@gmail.com>
+Date:   Thu Apr 25 15:54:19 2024 -0400
+
+    Pico: Added control logic
+
+[33mcommit 3252cb02aef217d0b131a79b701c6fb6356c3f79[m
+Author: KostasPik <kostas.pikoulas2002@gmail.com>
+Date:   Thu Apr 25 15:53:32 2024 -0400
+
+    Pico added control logic
+
+[33mcommit 6f1292cd65391727cc4e48ee1030ebdd1cddc75c[m
+Author: AlexiosVavvas <alexios.vavvas@gmail.com>
+Date:   Thu Apr 25 18:55:31 2024 +0300
+
+    Arduino code calibration, better visualisation, office testing...
+
+[33mcommit be6db9887e7f6439a80df1399a35e112ae262c93[m
+Author: AlexiosVavvas <alexios.vavvas@gmail.com>
+Date:   Thu Apr 25 13:35:00 2024 +0300
+
+    Using Circular Arrays - Code Cleanup
+
+[33mcommit f6e6663279871cb46a06e9a85221efb445d076cb[m
+Author: KostasPik <kostas.pikoulas2002@gmail.com>
+Date:   Wed Apr 24 14:22:51 2024 -0400
+
+    Working Pico ADC multicore code
+
+[33mcommit 440c6170e8b009c1a8bcbcb54a142a169b7cac2c[m
+Author: AlexiosVavvas <alexios.vavvas@gmail.com>
+Date:   Wed Apr 24 09:35:23 2024 +0300
+
+    Working Current Control Arduino Code
+
+[33mcommit 5dea4512ae39f39337044ee73511d2e7038d732e[m
+Author: AlexiosVavvas <alexios.vavvas@gmail.com>
+Date:   Mon Apr 15 19:30:51 2024 +0300
+
+    Resolving Conflict, Reuploading code from office
+
+[33mcommit 33677374776680c1802cd8ceaa4f27152010e4c8[m
+Author: ntua-el20112 <kostas.pikoulas2002@gmail.com>
+Date:   Fri Apr 12 02:52:25 2024 +0300
+
+    display script corrections
+
+[33mcommit f1f638ca13599cc621f79cd6c41d452030608585[m
+Author: KostasPik <kostas.pikoulas2002@gmail.com>
+Date:   Thu Apr 11 19:20:39 2024 -0400
+
+    added telemetry pannel support for arduino control unit
+
+[33mcommit 60bd5923be4b0ac7d90804e0dfa0b43db6c879e4[m
+Author: ntua-el20112 <kostas.pikoulas2002@gmail.com>
+Date:   Thu Apr 11 17:01:11 2024 +0300
+
+    data collection interrupts
+
+[33mcommit e526d0f3212bad5166ad47f035846785acb8cc91[m
+Author: AlexiosVavvas <alexios.vavvas@gmail.com>
+Date:   Mon Apr 8 13:41:05 2024 +0300
+
+    Uploading Current Control Files
+            - Data acquisition
+            - Simulated Control with pid and mpc
+
+[33mcommit d4a00e4395e2e93e3c1ad3608c545538cb840534[m
+Author: KostasPik <kostas.pikoulas2002@gmail.com>
+Date:   Thu Apr 4 15:28:26 2024 -0400
+
+    further telemetry and transmission code
+
+[33mcommit 53074c1a09af7d5aab5195e46908f33f4eb3f935[m
+Author: KostasPik <kostas.pikoulas2002@gmail.com>
+Date:   Mon Apr 1 11:53:26 2024 -0400
+
+    added some control code
+
+[33mcommit 51017c69c2645a012b5c7be8da706fd9f68fa530[m
+Author: KostasPik <kostas.pikoulas2002@gmail.com>
+Date:   Tue Mar 26 20:13:57 2024 -0400
+
+    mavlink message additions
+
+[33mcommit 971cb0fc55c3046dd4ec2dc8ec574d83449e712e[m
+Author: KostasPik <kostas.pikoulas2002@gmail.com>
+Date:   Tue Mar 26 19:24:59 2024 -0400
+
+    finished mavlink protocol parsing (not yet tested)
+
+[33mcommit ac4c86fb8e541d234f703086157d67e374c45910[m
+Author: KostasPik <kostas.pikoulas2002@gmail.com>
+Date:   Fri Mar 22 10:10:38 2024 -0400
+
+    further mavlink progress
+
+[33mcommit 7d0598e9f6fe2052a8def3bc5e5a686429947af3[m
+Author: KostasPik <kostas.pikoulas2002@gmail.com>
+Date:   Thu Mar 21 08:57:53 2024 -0400
+
+    refactor zeus drone code
+
+[33mcommit f7b02ebb8fe586c1fe80907b26cf80aa434c63af[m
+Author: KostasPik <kostas.pikoulas2002@gmail.com>
+Date:   Wed Mar 20 15:00:16 2024 -0400
+
+    some mavlink boilerplate code
+
+[33mcommit bf843d45e669b10bdac1191261e18f741d505aff[m
+Author: KostasPik <kostas.pikoulas2002@gmail.com>
+Date:   Sat Mar 9 01:26:24 2024 +0200
+
+    SBUS fix - fixed tty configuration
+
+[33mcommit c63d7f9f8268405fbf3522b94bb5cbef96168c77[m
+Author: KostasPik <kostas.pikoulas2002@gmail.com>
+Date:   Sat Mar 2 14:56:20 2024 -0500
+
+    sbus fix
+
+[33mcommit ad59745085b838aa3e5a2c49f198d0730285175a[m
+Author: ntua-el20112 <el20112@mail.ntua.gr>
+Date:   Sat Mar 2 17:58:15 2024 +0200
+
+    some sbus fixes
+
+[33mcommit e12c18dfd2db5b8bc1f0f8113553623ade57c8df[m
+Author: ntua-el20112 <el20112@mail.ntua.gr>
+Date:   Sat Mar 2 11:59:25 2024 +0200
+
+    sbus change min max values
+
+[33mcommit 4ae5557f2867571c19bf1da7317744de53b385a5[m
+Author: ntua-el20112 <el20112@mail.ntua.gr>
+Date:   Fri Mar 1 23:52:21 2024 +0200
+
+    sbus debug script
+
+[33mcommit 1f47b9c4360c88c3c4636caca9f30416016f83f7[m
+Author: KostasPik <kostas.pikoulas2002@gmail.com>
+Date:   Fri Feb 16 11:16:09 2024 -0500
+
+    inverted sbus packets
+
+[33mcommit fe2c1848f2e0039541a1f268cc91778f465ff5f1[m
+Author: KostasPik <kostas.pikoulas2002@gmail.com>
+Date:   Sat Feb 10 06:25:51 2024 -0500
+
+    simple mission
+
+[33mcommit da6e74a28a1dd2a70ba65ebb79dce00ea7488456[m
+Author: KostasPik <kostas.pikoulas2002@gmail.com>
+Date:   Fri Jan 26 11:02:19 2024 -0500
+
+    updates
+
+[33mcommit fa3d36071c6174f13963bd18fcc2854f6e4da5d7[m
+Author: KostasPik <kostas.pikoulas2002@gmail.com>
+Date:   Wed Jan 24 07:32:02 2024 -0500
+
+    minor updates
+
+[33mcommit 95037d79b2c6b46a8e3cab13d9789349478a09d9[m
+Author: KostasPik <kostas.pikoulas2002@gmail.com>
+Date:   Sun Dec 24 12:59:22 2023 -0500
+
+    zeus sbus fixes
+
+[33mcommit 1cf0bdd1d16d6f2f81c9be7e286ee66c2742537b[m
+Author: KostasPik <kostas.pikoulas2002@gmail.com>
+Date:   Sun Dec 24 12:57:21 2023 -0500
+
+    fixes for zeus sbus
+
+[33mcommit df0ebd41ae4c872f848fc8caefbe2ff5853a58df[m
+Author: KostasPik <kostas.pikoulas2002@gmail.com>
+Date:   Sun Dec 24 17:14:52 2023 +0200
+
+    zeus sbus
+
+[33mcommit e5db84d74c10c1927c471b72f4516ba7139e898d[m
+Author: KostasPik <kostas.pikoulas2002@gmail.com>
+Date:   Sun Dec 24 02:19:55 2023 +0200
+
+    Unfinished zeus drone sbus code
+
+[33mcommit a9a74f95b2aed9b86da66e1e1f54bb321f35ab0b[m
+Author: AlexiosVavvas <alexios.vavvas@gmail.com>
+Date:   Thu Oct 5 19:48:27 2023 +0300
+
+    Pid2d mpu9250 & SD tries
+
+[33mcommit c079ec97bc1e67206b936fd8eac21eda144411da[m
+Author: AlexiosVavvas <alexios.vavvas@gmail.com>
+Date:   Wed Sep 20 13:29:19 2023 +0300
+
+    PID_2D_X: Added SD card Support (Memory Problem)
+            Kinda works but we have problem with the memory usage (100%)
+            The main issue is the myFile.prints in every loop. Maybe print less things to the card?
+
+[33mcommit eb97b2964519f4cbe9235108fb3cdf120fdd8372[m
+Author: AlexiosVavvas <alexios.vavvas@gmail.com>
+Date:   Tue Sep 19 15:28:16 2023 +0300
+
+    PID_2D_X: Added GPS Support (TinyGPS++ Library)
+
+[33mcommit 3cec405344b72601bbc58dbe70c356518e4785b7[m
+Author: Andreas Mitakidis <andreas6899@gmail.com>
+Date:   Sat Sep 16 19:33:03 2023 +0300
+
+    deleted info
+
+[33mcommit bce7948de00d8080a08ae6d81a1a278bc5d43c96[m
+Author: AlexiosVavvas <alexios.vavvas@gmail.com>
+Date:   Sat Sep 9 19:43:55 2023 +0300
+
+    Wind Tunnel (MAJOR UPDATE)
+            - Uploaded code run in the final experiments
+            - efficiencyMap_NO_NRF:
+                    added motor speed profile
+                    ability to slowly increase speed, slowly cut off at the end
+                    fixed current measurement
+                    commented out sd card, we dont need it
+                    other things i dont remember hahahha
+
+[33mcommit aadb8959fad4c4465be14165372b3b6ec8a88241[m
+Author: andmit <andmit@rico.lan>
+Date:   Wed Sep 6 11:36:08 2023 +0300
+
+    current measurement
+
+[33mcommit e28159000b0c76d1367a8aebc14e1c1c9fc5cd9e[m
+Author: AlexiosVavvas <alexios.vavvas@gmail.com>
+Date:   Wed Sep 6 10:49:01 2023 +0300
+
+    Morning Change
+            - Added SD file save option
+
+[33mcommit 57dcadcda55f357f91cb0481f85f451c03d8c494[m
+Author: AlexiosVavvas <alexios.vavvas@gmail.com>
+Date:   Tue Sep 5 20:46:46 2023 +0300
+
+    WindTunnel minor fix
+            - Added way to optionally measure RPM. It takes time and we might not want to do it every time.
+            - Pin correction for SD card
+
+[33mcommit 36689beababe146bcdd40dfc33669dbfa1b0926a[m
+Author: andmit <andmit@rico.lan>
+Date:   Mon Sep 4 23:48:48 2023 +0300
+
+    updated nrf code - works, added voltage, current measurements
+
+[33mcommit 9924e5ec1c28876d212e40ea886d0523a651333b[m
+Author: AlexiosVavvas <alexios.vavvas@gmail.com>
+Date:   Mon Sep 4 20:28:50 2023 +0300
+
+    WindTunnel Update 2
+            - Fixed Pitot
+            - Add rpm measurement with interrupts
+            - Cleaner setup and loop (added assisting functions)
+
+[33mcommit f1ee9e5fb8ffc5bffa456c21a48ed3199560b0f9[m
+Author: AlexiosVavvas <alexios.vavvas@gmail.com>
+Date:   Mon Sep 4 11:53:40 2023 +0300
+
+    Added Wind Tunnel - No NRF
+
+[33mcommit 6db771df02446c115ec44536d6390c2ae87523d9[m
+Author: Andreas Mitakidis <andreas6899@gmail.com>
+Date:   Sun Sep 3 19:50:16 2023 +0300
+
+    rpm with i2c, voltage meter
+
+[33mcommit 01cf16bf83fe29dd29cb46d0a9537a3ef9be8c06[m
+Author: AlexiosVavvas <alexios.vavvas@gmail.com>
+Date:   Sun Sep 3 14:20:53 2023 +0300
+
+    WindTunnel Code Update
+            - Added Frequency Counter
+            - Calibrated load cell
+            - Some packets are sent multiple times for redundancy
+            - Modified Serial Studio Json file
+
+[33mcommit 581b928ba7067150c3e1c5c6a6b26ffddc899db5[m
+Author: AlexiosVavvas <alexios.vavvas@gmail.com>
+Date:   Thu Aug 31 13:31:53 2023 +0300
+
+    WindTunnel Update: Working NRF Com
+            Working 2-Way NRF Communication between the control room and the tunnel inside.
+            Basic control via serial commands in the form of QnA
+            Files involved:
+                    - control.ino                   : control room
+                    - efficiencyMap3.0.ino  : wind tunnel
+
+[33mcommit d50d08d023e6b94a230dbaa6b832099d9c4765c3[m
+Author: AlexiosVavvas <alexios.vavvas@gmail.com>
+Date:   Sat Jul 15 21:19:15 2023 +0300
+
+    Team Meeting 15/07/23
+
+[33mcommit e612b53baedbf567bbb9332e5760f7062f7a1644[m
+Author: Rico <rico@hercules.lan>
+Date:   Thu Jul 13 13:06:40 2023 +0300
+
+    added nrf to efficiency map
+
+[33mcommit b230ee0103076a989a99395d2a2c446dc2217b0c[m
+Author: AlexiosVavvas <alexios.vavvas@gmail.com>
+Date:   Sun Jun 4 17:55:57 2023 +0300
+
+    pid_2D_xShape
+            - Added Telemetry support
+            - Added 2 way NRF communication
+                    Ground Station
+                            sends telemetry
+                            reads commands and pid constants
+                    Transmitter
+                            reads commands from transmitter
+            - Added starting buzzer beep
+    
+    GroundStation
+            - Added basic ground station
+            - commands sent from ground need extra work. Strings typed in terminal do not get through
+    
+    Transmitter
+            - PID constants are now only sent by the ground station. Not the transmitter
+
+[33mcommit 4a3101ba948c8c3d3a4838075b83365cef739582[m
+Author: Andreas Mitakidis <andreas6899@gmail.com>
+Date:   Thu May 11 18:00:25 2023 +0300
+
+    minor changes, new directory
+
+[33mcommit cbaf44156260d2ee03210ef91f1a2da762f08a2e[m
+Author: KostasPik <kostas.pikoulas2002@gmail.com>
+Date:   Tue Apr 18 00:08:47 2023 +0300
+
+    further improvements in efficiencyMap2.0
+
+[33mcommit 8a7a2a6f4310b1629c857d94c6aaafd2c80c9ecb[m
+Author: AlexiosVavvas <alexios.vavvas@gmail.com>
+Date:   Mon Apr 17 20:46:07 2023 +0300
+
+    Restored ifs in pitot measurements
+
+[33mcommit d51c87eaa23b7924723ad1ffcc3e381bc3b9c93d[m
+Author: KostasPik <kostas.pikoulas2002@gmail.com>
+Date:   Sun Apr 16 20:03:02 2023 +0300
+
+    minor fixes to efficiencyMap2.0
+
+[33mcommit 1738e1d3fea962c65bec8896f9f16ad2ef6c3ab7[m
+Author: KostasPik <kostas.pikoulas2002@gmail.com>
+Date:   Sun Apr 16 19:42:20 2023 +0300
+
+    added efficiencyMap2.0
+
+[33mcommit 05f0390c7f232238271afb1cfd247dd3c8bd976f[m
+Author: KostasPik <kostas.pikoulas2002@gmail.com>
+Date:   Sun Apr 16 14:08:47 2023 +0300
+
+    added efficiencyMap2.0
+
+[33mcommit d14f7563629b0ff84595cea704cfd3ecabd23e2c[m
+Author: KostasPik <kostas.pikoulas2002@gmail.com>
+Date:   Sun Apr 16 02:31:18 2023 +0300
+
+    added efficiencyMap2.0
+
+[33mcommit b72a8e7072466c846fba9cc5b8d97d785a4d7749[m
+Author: AlexiosVavvas <alexios.vavvas@gmail.com>
+Date:   Mon Apr 10 11:37:17 2023 +0300
+
+    Further cleanup to code
+            - int -> float
+            - reading dyn once per iteration and storing it to variable
+            - typos "Serli -> Serial"
+
+[33mcommit 7ffa2d16f45a429808e62fcb4ceb4b2fd7bf52fa[m
+Author: AlexiosVavvas <alexios.vavvas@gmail.com>
+Date:   Fri Apr 7 13:26:09 2023 +0300
+
+    Minor changes + Some cleanup to be more readable
+            - changed names (eg: offset -> pitot_offset)
+            - Sd card pin absent at SD.begin()
+            - offset_size -> offset_times (name not defined)
+            - myFile object not reOpened for writing after each loop
+    Questions:
+            - small delay at pitot offset calculation?
+            - airspeed in [m/s]?
+            - 10sec delay for stability??
+
+[33mcommit d9ddd9d8396e876faa982af54bad42de27b25172[m
+Author: AthAthena <ath.athanasaki@gmail.com>
+Date:   Thu Mar 30 08:04:07 2023 +0300
+
+    Update efficiencyMap.ino
+
+[33mcommit 02e02ba2e57ac2a8f1450735cd60b9a97d241496[m
+Author: AthAthena <ath.athanasaki@gmail.com>
+Date:   Wed Mar 29 20:24:26 2023 +0300
+
+    Add files via upload
+
+[33mcommit a1507bcb7ea51fec8c70d1a59937a871fb153432[m
+Author: AthAthena <ath.athanasaki@gmail.com>
+Date:   Wed Mar 29 20:21:50 2023 +0300
+
+    Delete efficiency ma
+
+[33mcommit 71b1775adaf8c9c219ce9209242692d82acf4db8[m
+Author: AthAthena <ath.athanasaki@gmail.com>
+Date:   Wed Mar 29 20:21:12 2023 +0300
+
+    Create efficiency ma
+
+[33mcommit c4b8603859009a70317151537f109924dfa341d2[m
+Author: Andreas Mitakidis <andreas6899@gmail.com>
+Date:   Wed Nov 30 10:26:16 2022 +0200
+
+    added libraries
+
+[33mcommit 0b84fcd2b71ac21a07fc6ad9ded08550f8ad2d18[m
+Author: Andreas Mitakidis <andreas6899@gmail.com>
+Date:   Thu Oct 20 16:59:07 2022 +0300
+
+    Multiwii and drone info
+
+[33mcommit 10d5174a7028d3e4a06937f9cd0209851094ab3d[m
+Author: AlexiosVavvas <alexios.vavvas@gmail.com>
+Date:   Fri Sep 30 10:38:07 2022 +0300
+
+    Added basic YAW (no controller involved - manually via transmitter)
+    
+    ChangeLog:
+            pid_2d_xShape
+                    - Added yaw control by mapping joystick value
+                            "yaw_speed = map(data.yaw, 0, 255, -0.1*data.throttle, 0.1*data.throttle);"
+                      and giving that extra power (up to 10% of current data.throttle), to the appropriate motors
+    
+                    - Added Loop Freq monitoring in serial studio by using elapsed_time
+                            freq = 1 / elapsed_time [kHz] = 1 / elapsed_time * 1000 [Hz]
+
+[33mcommit bd8b730fe8167610a94583e4914f1203ecd27166[m
+Author: AlexiosVavvas <alexios.vavvas@gmail.com>
+Date:   Wed Sep 28 11:59:34 2022 +0300
+
+    Added ARM - DISARM capabilities to the system
+    
+    Changelog:
+            pid_2d_xShape
+                    - added throttle control
+                    - added motor arm sequence and fast disarm switch
+                    - blinkLED
+                    - If throttle is 0, remove I terms
+                      This means the motors will not start spooling up on the ground, and the I terms will always start from 0 on takeoff
+            nrfTransmitter_basic_6ch
+                    - removed throttle cut. Transmitter just transmits and controller desides what to do with it
+
+[33mcommit 9e911ceb794d03ddface3fba115a97ad12f4b20c[m
+Author: AlexiosVavvas <alexios.vavvas@gmail.com>
+Date:   Tue Sep 27 11:09:03 2022 +0300
+
+    Transmitter sends PID constants (just for testing purposes)
+
+[33mcommit bd1648bd0aa67e3370e16537c67bc0c954618bbf[m
+Author: AlexiosVavvas <alexios.vavvas@gmail.com>
+Date:   Mon Sep 26 10:16:59 2022 +0300
+
+    Added Transmitter and a basic receiver to test it
+
+[33mcommit 3702d1899c9602d78c86f35ee8901e2c0fe19c1e[m
+Author: AlexiosVavvas <alexios.vavvas@gmail.com>
+Date:   Fri Sep 23 10:40:43 2022 +0300
+
+    Pitch and Roll angles are now controllable via an NRF24 transmitter
+
+[33mcommit c18d312ee5c3065069273ff8b442c5c7a014865c[m
+Author: AlexiosVavvas <alexios.vavvas@gmail.com>
+Date:   Wed Sep 21 09:10:33 2022 +0300
+
+    Introduced anti-windup for the pid2D project
+
+[33mcommit 3b36af9fc0a4b584b064466a1b905800c3a38923[m
+Author: AlexiosVavvas <alexios.vavvas@gmail.com>
+Date:   Wed Sep 21 08:22:36 2022 +0300
+
+    Started "PID_2D_xShape" project by modifying "pid1D"
+    
+    Changes:
+            - added mpu9250 datasheets
+            - new project folder for pid_2D_xShape
+
+[33mcommit 803a7c2e0f3d14ff37bed73aedccd8c888371a26[m
+Author: AlexiosVavvas <alexios.vavvas@gmail.com>
+Date:   Tue Sep 13 21:09:23 2022 +0300
+
+    Introduced "Moving Average Filter" idea
+    
+    Just a simple filter to smooth out sensor readings even more.
+    I have written the function but not applied it in the code.
+
+[33mcommit f671dd18736d9edf70c390e216f4ddb83e5c02a8[m
+Author: AlexiosVavvas <alexios.vavvas@gmail.com>
+Date:   Sun Sep 11 12:28:19 2022 +0300
+
+    Went back to using the mpu library :(
+    
+    I thought that the acc only measures gravity, but unfortunately it measures every linear acc caused
+    by external forces. For our scenario, this might not be a problem, since the sensor is located
+    right at the center of rotation. But for a future project (eg. drone), we need the library (Sensor Fusion capabilities).
+    So, what changed:
+            - minor general fixes to the code
+            - use of sensor library
+            - i kept DLPF setting
+
+[33mcommit d885590cf29b39077017a936892d8291c1b36c3b[m
+Author: AlexiosVavvas <alexios.vavvas@gmail.com>
+Date:   Sat Sep 10 21:27:38 2022 +0300
+
+    New way of measuring angle to counteract angle shift and noise
+    
+    I replaced the library with manually reading mpu6050's registers
+    to only get what we need. Currently we measure accelerometer data (percentage
+    of force applied to each axis) from which we derive the angle.
+    Also i configured the sensor's built in DLPF (Digital Low Pass Filter) to
+    reduce the noise we had in our readings.
+    I think the final result is really satisfying regarding our application.
+    However we still need to test it!
+
+[33mcommit dbc364930752460ebfd69a1de49c69d6dd107490[m
+Author: AlexiosVavvas <alexios.vavvas@gmail.com>
+Date:   Fri Sep 9 21:08:02 2022 +0300
+
+    Working code after first meeting (09-09-22)
+    
+    When motor power is on, motors need to receive 1000 (Min)
+    Then we can command them whatever we want.
+
+[33mcommit 99afbd1a44c7c186fefa7939d734f42e69724c8a[m
+Author: AlexiosVavvas <112983481+AlexiosVavvas@users.noreply.github.com>
+Date:   Thu Sep 8 13:17:57 2022 +0300
+
+    Fixed minor bugs. Now the code compiles successfully
+    
+    Other changes:
+            - Made a separate todo.txt file to write future improvements
+            - Made a folder with some usefull photos
+
+[33mcommit ec8c9917270335e8c687a17d35deea26977a4fc2[m
+Author: AlexiosVavvas <alexios.vavvas@gmail.com>
+Date:   Thu Sep 8 12:59:34 2022 +0300
+
+    Completed D and I parts of the pid_1D algorithm
+
+[33mcommit 8739382bd6b6a37ebf1f5db098f56c5f7a6650e4[m
+Author: AlexiosVavvas <alexios.vavvas@gmail.com>
+Date:   Wed Sep 7 22:51:37 2022 +0300
+
+    First idea for the 1D pid controller (only P part written) [pid_1d.ino]
+
+[33mcommit 8b611a1662b704b39218083e0601e775fa9a2678[m
+Author: AlexiosVavvas <alexios.vavvas@gmail.com>
+Date:   Wed Sep 7 15:37:43 2022 +0300
+
+    testing git
+
+[33mcommit bc5dd450d49eb427368865d6afd6df60d749c56e[m
+Author: Andreas Mitakidis <andreas6899@gmail.com>
+Date:   Tue Sep 6 16:06:25 2022 +0300
+
+    initial commit
+
+[33mcommit b811b7737f2cf2f1dff0fdd3794d07e61295d86c[m
+Author: Andreas Mitakidis <43671118+AndreasMit@users.noreply.github.com>
+Date:   Tue Sep 6 15:48:44 2022 +0300
+
+    Update README.md
+
+[33mcommit eef4218ff2e460b16f9c6a72fea6219add27c6e2[m
+Author: Andreas Mitakidis <43671118+AndreasMit@users.noreply.github.com>
+Date:   Tue Sep 6 15:45:44 2022 +0300
+
+    Initial commit

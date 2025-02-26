@@ -3,8 +3,8 @@ import matplotlib.pyplot as plt
 import sys
 
 # Filename without extension
-file_name = "measurements/2024_04_27/test_22"
-# file_name = sys.argv[1]
+# file_name = "measurements/2024_05_20/test_1"
+file_name = sys.argv[1]
 
 # Load data from CSV file
 data = np.genfromtxt(f"{file_name}.csv", delimiter=',', dtype=str, skip_header=10)
