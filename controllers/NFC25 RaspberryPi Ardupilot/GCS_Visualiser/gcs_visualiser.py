@@ -10,7 +10,7 @@ SERIAL_PORT = 'COM12'   # Adjust as needed
 BAUD_RATE = 9600
 GUI_REFRESH_RATE = 100  # milliseconds
 
-SAVE_TO_FILE = False    # Set to True to save data to file
+SAVE_TO_FILE = True    # Set to True to save data to file
 
 # -----------------------------------------------------
 
@@ -21,7 +21,7 @@ labels_text = ["Timestamp", "Latency (ms)", "Freq (Hz)", "Angle of Attack", "Alt
 # Initialize CSV file if saving is enabled
 if SAVE_TO_FILE:
     start_time = datetime.now()
-    filename = start_time.strftime("%Y%m%d_%H%M%S") + ".csv"
+    filename = "GCS_Visualiser/" + start_time.strftime("%Y%m%d_%H%M%S") + ".csv"
     csv_file = open(filename, "w", newline="")
     csv_writer = csv.writer(csv_file)
     # Write header row

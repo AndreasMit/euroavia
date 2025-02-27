@@ -2,5 +2,6 @@
     "files.associations": {
         "termbits.h": "c",
         "compare": "c"
-    }
+    },
+    "cmake.sourceDirectory": "C:/Users/alexi/OneDrive - Εθνικό Μετσόβιο Πολυτεχνείο/Documents/University Personal/Hermes Team/Euroavia Github/Current Control/pico"
 }
