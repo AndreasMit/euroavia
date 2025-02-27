@@ -7,6 +7,7 @@ Implements all requirements from NFC25 Competition Task v1.3
 import threading
 import time
 from pymavlink import mavutil
+import sx126x
 
 # ---- MAVLink2 Interface Parameters -----------
 
@@ -15,10 +16,22 @@ MAV_BAUD = 57600           # Baudrate for MAVLink communication
 
 # ---------------------------------------------
 
+# ---- LoRa Interface Parameters ---------------
+
+LORA_PORT = '/dev/ttyUSB0'  # Serial port for LoRa communication
+LORA_FREQ = 868           # Frequency for LoRa communication
+LORA_POWER = 22           # Power for LoRa communication
+LORA_AIR_SPEED = 2400     # Air speed for LoRa communication
+LORA_ADDR = 0             # Address for LoRa communication
+
+TELEM_FREQ = 1            # Rasp -> GCS Telemetry frequency [Hz]
+
+# ---------------------------------------------
+
 
 # ======== NFC25 Autopilot Class ========
 class NFC25Autopilot:
-    def __init__(self, mav_port='/dev/serial0', mav_baud=57600):
+    def __init__(self, mav_port='/dev/serial0', mav_baud=57600, lora_port='/dev/ttyS0', lora_freq=868, lora_power=22, lora_air_speed=2400, lora_addr=0):
 
         # MAVLink connection
         self.mav_connection = mavutil.mavlink_connection(mav_port, baud=mav_baud, autoreconnect=True)
@@ -34,10 +47,19 @@ class NFC25Autopilot:
             'bat_current': 0
         }
         
+        # Initialize LoRa connection
+        self.lora_node = sx126x.sx126x(serial_num=lora_port, freq=lora_freq, addr=lora_addr, power=lora_power, rssi=True, air_speed=lora_air_speed, relay=False)
+        
+        # Variables for telemetry counter
+        self.telem_counter = 0
+        
         # Start the MAVLink reading thread
         self.mavlink_thread = threading.Thread(target=self._readMavlinkData, daemon=True)
         self.mavlink_thread.start()
 
+        # Start the LoRa telemetry thread
+        self.lora_thread = threading.Thread(target=self._sendTelemetryData, daemon=True)
+        self.lora_thread.start()
 
     # ======== MAVLink Communication Setup ========
     def _configure_mavlink_streams(self):
@@ -92,7 +114,7 @@ class NFC25Autopilot:
                 handler = self.message_handlers.get(msg_type)
                 if handler:
                     handler(msg)
-            time.sleep(0.01)  # Check at 100 Hz to avoid CPU overload
+            time.sleep(0.01)  # Wait a bit to avoid CPU overload
     
     # Message handler functions
     def _handleHeartbeat(self, msg):
@@ -131,6 +153,43 @@ class NFC25Autopilot:
                 self.telem_data['bat_current'] = msg.current_battery/1e2 # Convert to [A]
 
     
+    # ======== LoRa Telemetry Thread ========
+    # Thread to send telemetry data via LoRa at specified frequency
+    def _sendTelemetryData(self):
+        period = 1 / TELEM_FREQ  # Desired period in seconds
+        
+        while True:
+            start_time = time.time()
+            try:
+                # Format telemetry data as CSV string
+                with self.data_lock:
+                    telemetry_csv = (
+                        f"{self.telem_counter},"
+                        f"{self.telem_data['angle_of_attack']:.2f},"
+                        f"{self.telem_data['altitude']:.2f},"
+                        f"{self.telem_data['g_force']:.2f},"
+                        f"{self.telem_data['bat_voltage']:.2f},"
+                        f"{self.telem_data['bat_current']:.2f},"
+                        f"{self.telem_data['imu_raw']['x']:.2f},"
+                        f"{self.telem_data['imu_raw']['y']:.2f},"
+                        f"{self.telem_data['imu_raw']['z']:.2f}\n"
+                    )
+                
+                # Send data via LoRa
+                self.lora_node.send(telemetry_csv.encode())
+                
+                # Increment counter and print debug info
+                self.telem_counter += 1
+                # print(f"LoRa TX [{self.telem_counter}]: {telemetry_csv.strip()}")
+                
+            except Exception as e:
+                print(f"LoRa transmission error: {e}")
+                time.sleep(1)  # Wait a bit before retrying
+            
+            elapsed = time.time() - start_time
+            remaining = period - elapsed
+            if remaining > 0:
+                time.sleep(remaining)
 
     # ======== Main Control Loop ========
     def run(self):
@@ -140,5 +199,8 @@ class NFC25Autopilot:
 
 
 if __name__ == "__main__":
-    autopilot = NFC25Autopilot(mav_baud=MAV_BAUD, mav_port=MAV_PORT)
+    # Configure and run the autopilot class
+    autopilot = NFC25Autopilot(mav_baud=MAV_BAUD, mav_port=MAV_PORT,
+                               lora_port=LORA_PORT, lora_freq=LORA_FREQ, lora_power=LORA_POWER,
+                               lora_air_speed=LORA_AIR_SPEED, lora_addr=LORA_ADDR)
     autopilot.run()
