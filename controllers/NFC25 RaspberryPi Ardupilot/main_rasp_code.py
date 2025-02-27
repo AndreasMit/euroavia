@@ -24,7 +24,7 @@ LORA_POWER = 22           # Power for LoRa communication
 LORA_AIR_SPEED = 2400     # Air speed for LoRa communication
 LORA_ADDR = 0             # Address for LoRa communication
 
-TELEM_FREQ = 1            # Rasp -> GCS Telemetry frequency [Hz]
+TELEM_FREQ = 2            # Rasp -> GCS Telemetry frequency [Hz]
 
 # ---------------------------------------------
 
@@ -161,10 +161,10 @@ class NFC25Autopilot:
         while True:
             start_time = time.time()
             try:
-                # Format telemetry data as CSV string
+                # Format telemetry data as CSV string with unix timestamp as first field
                 with self.data_lock:
                     telemetry_csv = (
-                        f"{self.telem_counter},"
+                        f"{time.time():.2f},"  # replaced telem_counter with timestamp
                         f"{self.telem_data['angle_of_attack']:.2f},"
                         f"{self.telem_data['altitude']:.2f},"
                         f"{self.telem_data['g_force']:.2f},"
@@ -177,10 +177,6 @@ class NFC25Autopilot:
                 
                 # Send data via LoRa
                 self.lora_node.send(telemetry_csv.encode())
-                
-                # Increment counter and print debug info
-                self.telem_counter += 1
-                # print(f"LoRa TX [{self.telem_counter}]: {telemetry_csv.strip()}")
                 
             except Exception as e:
                 print(f"LoRa transmission error: {e}")
