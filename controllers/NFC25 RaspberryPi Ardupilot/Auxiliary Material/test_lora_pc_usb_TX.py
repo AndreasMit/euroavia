@@ -4,7 +4,9 @@ import time
 def main():
     port = 'COM12'      # Adjust as needed
     baud_rate = 9600    # Standard baud rate
-    freq = 2            # [Hz]
+    freq = 1.5            # [Hz]
+    START_PATERN = "/*"
+    END_PATERN = "*/"
     
     try:
         ser = serial.Serial(port, baud_rate, timeout=1)
@@ -13,6 +15,7 @@ def main():
         accumulated_bytes = 0
         
         while True:
+            # message = START_PATERN + f"{counter},{counter+1},{counter-1}" + END_PATERN + "\n"
             message = f"Hello, World! This is message number: {counter}\n"
             bytes_to_send = len(message)
             accumulated_bytes += bytes_to_send

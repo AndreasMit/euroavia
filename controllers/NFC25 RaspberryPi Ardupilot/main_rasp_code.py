@@ -25,13 +25,16 @@ LORA_AIR_SPEED = 2400     # Air speed for LoRa communication
 LORA_ADDR = 0             # Address for LoRa communication
 
 TELEM_FREQ = 2            # Rasp -> GCS Telemetry frequency [Hz]
+TELEM_PERIOD = 2          # Every 2 seconds, pause telemetry sending for ...
+TELEM_PAUSE_TIME = 1     # ... 1 second
 
 # ---------------------------------------------
 
 
 # ======== NFC25 Autopilot Class ========
 class NFC25Autopilot:
-    def __init__(self, mav_port='/dev/serial0', mav_baud=57600, lora_port='/dev/ttyS0', lora_freq=868, lora_power=22, lora_air_speed=2400, lora_addr=0):
+    def __init__(self, mav_port='/dev/serial0', mav_baud=57600, lora_port='/dev/ttyS0', lora_freq=868, lora_power=22, lora_air_speed=2400, lora_addr=0, GROUND_START_PTRN="/*", GROUND_END_PTRN="*/"):
+
 
         # MAVLink connection
         self.mav_connection = mavutil.mavlink_connection(mav_port, baud=mav_baud, autoreconnect=True)
@@ -47,18 +50,33 @@ class NFC25Autopilot:
             'bat_current': 0
         }
         
-        # Initialize LoRa connection
-        self.lora_node = sx126x.sx126x(serial_num=lora_port, freq=lora_freq, addr=lora_addr, power=lora_power, rssi=True, air_speed=lora_air_speed, relay=False)
-        
         # Start the MAVLink reading thread
         self.mavlink_thread = threading.Thread(target=self._readMavlinkData, daemon=True)
         self.mavlink_thread.start()
 
-        # Start the LoRa telemetry thread
-        self.lora_thread = threading.Thread(target=self._sendTelemetryData, daemon=True)
-        self.lora_thread.start()
+        # ======== LoRa Communication Setup ========
+        # Initialize LoRa connection
+        self.lora_node = sx126x.sx126x(serial_num=lora_port, freq=lora_freq, addr=lora_addr, power=lora_power, rssi=False, air_speed=lora_air_speed, relay=False)
+        
+        # Add a lock for LoRa operations
+        self.lora_lock = threading.Lock()
+        
+        # Add a buffer for accumulating message fragments
+        self.command_buffer = ""
+        self.buffer_timeout = time.time()
+        self.MAX_BUFFER_AGE = 1    # Max age of buffer in seconds
 
-    # ======== MAVLink Communication Setup ========
+        self.GROUND_START_PTRN = GROUND_START_PTRN
+        self.GROUND_END_PTRN = GROUND_END_PTRN
+
+        # Start the LoRa send and receive threads
+        self.lora_send_thread = threading.Thread(target=self._sendTelemetryData, daemon=True)
+        self.lora_send_thread.start()
+        
+        self.lora_recv_thread = threading.Thread(target=self._readLoraCommands, daemon=True)
+        self.lora_recv_thread.start()
+
+    # ======== MAVLink Communication Setup ==============================================
     def _configure_mavlink_streams(self):
         # Disable all streams first
         self.mav_connection.mav.request_data_stream_send(self.mav_connection.target_system, self.mav_connection.target_component, mavutil.mavlink.MAV_DATA_STREAM_ALL, 0, 0)
@@ -156,50 +174,154 @@ class NFC25Autopilot:
             # TODO: Implement RC channel handling - Carefull! Test With Transmitter
             pass
     
-    # ======== LoRa Telemetry Thread ========
+    # =================== LoRa Telemetry Thread =========================================
     # Thread to send telemetry data via LoRa at specified frequency
     def _sendTelemetryData(self):
-        period = 1 / TELEM_FREQ  # Desired period in seconds
-        
+        last_pause = time.time()  # Track when we last paused telemetry
         while True:
             start_time = time.time()
+            period = 1 / TELEM_FREQ
+
+            # Check for periodic telemetry pause
+            if time.time() - last_pause >= TELEM_PERIOD:
+                print("Pausing telemetry for a while...")
+                time.sleep(TELEM_PAUSE_TIME)
+                last_pause = time.time()
+
             try:
-                # Format telemetry data as CSV string with unix timestamp as first field
-                with self.data_lock:
-                    telemetry_csv = (
-                        f"{time.time():.2f},"  # Unix timestamp
-                        f"{self.telem_data['angle_of_attack']:.2f},"
-                        f"{self.telem_data['altitude']:.2f},"
-                        f"{self.telem_data['g_force']:.2f},"
-                        f"{self.telem_data['bat_voltage']:.2f},"
-                        f"{self.telem_data['bat_current']:.2f},"
-                        f"{self.telem_data['imu_raw']['x']:.2f},"
-                        f"{self.telem_data['imu_raw']['y']:.2f},"
-                        f"{self.telem_data['imu_raw']['z']:.2f}\n"
-                    )
-                
-                # Send data via LoRa
-                self.lora_node.send(telemetry_csv.encode())
-                
+                # First check if there might be incoming data before sending telemetry
+                send_telemetry = True
+                try:
+                    if self.lora_node.ser.in_waiting:
+                        send_telemetry = False
+                        print("Skipping telemetry send - incoming data detected")
+                        last_pause = time.time()  # Reset pause timer
+                except Exception as e:
+                    print(f"Error peeking at serial input buffer with error: {e}")
+
+                # Send telemetry if no incoming data detected
+                if send_telemetry:
+                    with self.data_lock:
+                        telemetry_csv = (
+                            f"{time.time():.2f},"
+                            f"{self.telem_data['angle_of_attack']:.2f},"
+                            f"{self.telem_data['altitude']:.2f},"
+                            f"{self.telem_data['g_force']:.2f},"
+                            f"{self.telem_data['bat_voltage']:.2f},"
+                            f"{self.telem_data['bat_current']:.2f},"
+                            f"{self.telem_data['imu_raw']['x']:.2f},"
+                            f"{self.telem_data['imu_raw']['y']:.2f},"
+                            f"{self.telem_data['imu_raw']['z']:.2f}\n"
+                        )
+                    if self.lora_lock.acquire(timeout=0.1):
+                        try:
+                            self.lora_node.send(telemetry_csv.encode())
+                            print(f"Sent telemetry: {telemetry_csv.strip()}")
+                            time.sleep(0.02)  # Short delay after sending
+                        finally:
+                            self.lora_lock.release()
             except Exception as e:
                 print(f"LoRa transmission error: {e}")
-                time.sleep(1)  # Wait a bit before retrying
-            
+
+            # Calculate remaining time in this cycle
             elapsed = time.time() - start_time
             remaining = period - elapsed
             if remaining > 0:
                 time.sleep(remaining)
 
+    
+    # Method to continuously check for incoming LoRa commands
+    def _readLoraCommands(self):
+        while True:
+            try:
+                # First check if there's actually data waiting before acquiring the lock
+                has_data = False
+                try:
+                    if self.lora_node.ser.in_waiting > 0:
+                        has_data = True
+                except Exception:
+                    print(f"Error peeking at serial input buffer with error: {e}")
+                
+                # Only try to acquire the lock if there's actually data to read
+                if has_data and self.lora_lock.acquire(blocking=True, timeout=0.5):
+                    try:
+                        incoming_msg = self.lora_node.receive()
+                        if incoming_msg:
+                            self._bufferCommand(incoming_msg)
+                    finally:
+                        self.lora_lock.release()
+                else:
+                    # Don't sleep as long when we didn't try to acquire the lock
+                    time.sleep(0.01)
+                    
+                # Reset buffer if it gets too old (fragmented message abandoned)
+                if time.time() - self.buffer_timeout > self.MAX_BUFFER_AGE and self.command_buffer:
+                    print(f"ARDUPILOT: Command buffer timed out, clearing: {self.command_buffer}")
+                    self.command_buffer = ""
+                    self.buffer_timeout = time.time()
+                    
+            except Exception as e:
+                print(f"LoRa command reception error: {e}")
+            
+            # Shorter sleep when no data was available
+            if not has_data:
+                time.sleep(0.01)  # Slower checking when no data
+            else:
+                time.sleep(0.001)  # Fast checking when data was found
+    
+    # New method to buffer fragments and process when complete
+    def _bufferCommand(self, fragment):
+        # Update timeout since we received something
+        self.buffer_timeout = time.time()
+        
+        # Add fragment to buffer
+        self.command_buffer += fragment
+        print(f"ARDUPILOT: Buffer now contains: {self.command_buffer}")
+        
+        # Check if we have a complete command
+        if self.GROUND_START_PTRN in self.command_buffer and self.GROUND_END_PTRN in self.command_buffer:
+            # Extract all complete commands from the buffer
+            while self.GROUND_START_PTRN in self.command_buffer and self.GROUND_END_PTRN in self.command_buffer:
+                try:
+                    # Find the position of start and end patterns
+                    start_pos = self.command_buffer.find(self.GROUND_START_PTRN)
+                    end_pos = self.command_buffer.find(self.GROUND_END_PTRN, start_pos)
+                    
+                    if start_pos != -1 and end_pos != -1:
+                        # Extract the command
+                        cmd_start = start_pos + len(self.GROUND_START_PTRN)
+                        cmd = self.command_buffer[cmd_start:end_pos]
+                        
+                        # Process the command appropriately
+                        self._processLoraCommand(cmd)
+
+                        # Remove the processed command from buffer
+                        self.command_buffer = self.command_buffer[end_pos + len(self.GROUND_END_PTRN):]
+                    else:
+                        # This shouldn't happen given our check above
+                        break
+                except Exception as e:
+                    print(f"ARDUPILOT: Error processing command: {e}")
+                    self.command_buffer = ""  # Clear buffer on error
+                    break
+    
+    # Method to process incoming LoRa commands (remove or modify as needed)
+    def _processLoraCommand(self, command):
+        # TODO: Process the command (implement command handling here)
+        print(f"ARDUPILOT: Received complete command: {command}\n")
+
     # ======== Main Control Loop ========
     def run(self):
         while True:
-            print(f"Altitude: {self.telem_data['altitude']:.2f}, Angle of attack: {self.telem_data['angle_of_attack']:.2f}, G: {self.telem_data['g_force']:.2f}, Bat: {self.telem_data['bat_voltage']:.2f}V, {self.telem_data['bat_current']:.2f}A")
-            time.sleep(1/50)  # 50 Hz update rate
+            # print(f"Altitude: {self.telem_data['altitude']:.2f}, Angle of attack: {self.telem_data['angle_of_attack']:.2f}, G: {self.telem_data['g_force']:.2f}, Bat: {self.telem_data['bat_voltage']:.2f}V, {self.telem_data['bat_current']:.2f}A")
+            time.sleep(1)  # 50 Hz update rate
 
 
 if __name__ == "__main__":
     # Configure and run the autopilot class
     autopilot = NFC25Autopilot(mav_baud=MAV_BAUD, mav_port=MAV_PORT,
-                               lora_port=LORA_PORT, lora_freq=LORA_FREQ, lora_power=LORA_POWER,
-                               lora_air_speed=LORA_AIR_SPEED, lora_addr=LORA_ADDR)
+                               lora_port=LORA_PORT, lora_freq=LORA_FREQ, lora_power=LORA_POWER, lora_air_speed=LORA_AIR_SPEED, lora_addr=LORA_ADDR)
     autopilot.run()
+
+    # Usefull Command
+    # rm main_rasp_code.py && nano main_rasp_code.py && python main_rasp_code.py

@@ -1,12 +1,15 @@
 TODO: 
-    - Make sure RC is ok
-    - Bidirectional Communication
-
-
+    - Validate and test RC channel functionality (Make sure RC is ok)
+    - Implement LoRa command processing
+    - Choose correct telemetry payload
 
 Recently Done:
     main_rasp_code.py
+        - Implement bidirectional communication
         - Added RC channel Support
-    
+    GCS
+        - Implement bidirectional communication
+
+
     Auxiliary Material
-        restart_time_rasp_pi.sh
+        Time sync rasp pi time with WIN10 over NTP server

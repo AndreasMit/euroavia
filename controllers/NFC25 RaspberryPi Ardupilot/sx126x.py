@@ -1,6 +1,6 @@
 # This file is used for LoRa and Raspberry pi4B related issues 
 
-import RPi.GPIO as GPIO
+import RPi.GPIO as GPIO # type: ignore
 import serial
 import time
 
@@ -79,7 +79,7 @@ class sx126x:
 
     def __init__(self,serial_num,freq,addr,power,rssi,air_speed=2400,\
                  net_id=0,buffer_size = 240,crypt=0,\
-                 relay=False,lbt=False,wor=False):
+                 relay=False,lbt=False,wor=False,serial_baud=9600):
         self.rssi = rssi
         self.addr = addr
         self.freq = freq
@@ -94,7 +94,7 @@ class sx126x:
         GPIO.output(self.M1,GPIO.HIGH)
 
         # The hardware UART of Pi3B+,Pi4B is /dev/ttyS0
-        self.ser = serial.Serial(serial_num,9600)
+        self.ser = serial.Serial(serial_num,serial_baud)
         self.ser.flushInput()
         self.set(freq,addr,power,rssi,air_speed,net_id,buffer_size,crypt,relay,lbt,wor)
 
@@ -236,37 +236,36 @@ class sx126x:
             # print("Power is {0} dBm" + lora_power_dic.get(None,power_temp))
             GPIO.output(self.M1,GPIO.LOW)
 
-#
-# the data format like as following
-# "node address,frequence,payload"
-# "20,868,Hello World"
+    #
+    # the data format like as following
+    # "node address,frequence,payload"
+    # "20,868,Hello World"
     def send(self,data):
         GPIO.output(self.M1,GPIO.LOW)
         GPIO.output(self.M0,GPIO.LOW)
-        time.sleep(0.1)
+        time.sleep(0.05)
 
         self.ser.write(data)
         # if self.rssi == True:
             # self.get_channel_rssi()
-        time.sleep(0.1)
+        time.sleep(0.05)
 
 
     def receive(self):
-        if self.ser.inWaiting() > 0:
-            time.sleep(0.5)
-            r_buff = self.ser.read(self.ser.inWaiting())
-
-            print("receive message from node address with frequence\033[1;32m %d,%d.125MHz\033[0m"%((r_buff[0]<<8)+r_buff[1],r_buff[2]+self.start_freq),end='\r\n',flush = True)
-            print("message is "+str(r_buff[3:-1]),end='\r\n')
+        if self.ser.in_waiting > 0:
+            # Read all available bytes instead of using readline()
+            raw_data = self.ser.read(self.ser.in_waiting)
+            # self.ser.flushInput()
+            try:
+                data = raw_data.decode('utf-8', errors='replace').strip()
+                return data
+            except Exception as e:
+                print(f"Error decoding LoRa data: {e}")
+                # Return raw bytes if decoding fails
+                return raw_data
             
-            # print the rssi
-            if self.rssi:
-                # print('\x1b[3A',end='\r')
-                print("the packet rssi value: -{0}dBm".format(256-r_buff[-1:][0]))
-                self.get_channel_rssi()
-            else:
-                pass
-                #print('\x1b[2A',end='\r')
+        else:
+            return None
 
     def get_channel_rssi(self):
         GPIO.output(self.M1,GPIO.LOW)
