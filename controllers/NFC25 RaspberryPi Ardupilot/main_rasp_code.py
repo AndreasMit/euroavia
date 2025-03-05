@@ -50,9 +50,6 @@ class NFC25Autopilot:
         # Initialize LoRa connection
         self.lora_node = sx126x.sx126x(serial_num=lora_port, freq=lora_freq, addr=lora_addr, power=lora_power, rssi=True, air_speed=lora_air_speed, relay=False)
         
-        # Variables for telemetry counter
-        self.telem_counter = 0
-        
         # Start the MAVLink reading thread
         self.mavlink_thread = threading.Thread(target=self._readMavlinkData, daemon=True)
         self.mavlink_thread.start()
@@ -70,12 +67,13 @@ class NFC25Autopilot:
         
         mav_mesg_to_enable = [
             # Message ID, Interval
-            (mavutil.mavlink.MAVLINK_MSG_ID_HEARTBEAT, 1/1*1e6),            # 1 Hz - interval in [us]
+            (mavutil.mavlink.MAVLINK_MSG_ID_HEARTBEAT, 1/1*1e6),            # 1 Hz  - interval in [us]
             (mavutil.mavlink.MAVLINK_MSG_ID_ATTITUDE, 1/20*1e6),            # 20 Hz - interval in [us]
             (mavutil.mavlink.MAVLINK_MSG_ID_GLOBAL_POSITION_INT, 1/10*1e6), # 10 Hz - interval in [us]
             (mavutil.mavlink.MAVLINK_MSG_ID_VFR_HUD, 1/10*1e6),             # 10 Hz - interval in [us]
-            (mavutil.mavlink.MAVLINK_MSG_ID_RAW_IMU, 1/20*1e6),              # 20 Hz - interval in [us]
-            (mavutil.mavlink.MAVLINK_MSG_ID_SYS_STATUS, 1/2*1e6)        # 1 Hz - interval in [us]
+            (mavutil.mavlink.MAVLINK_MSG_ID_RAW_IMU, 1/20*1e6),             # 20 Hz - interval in [us]
+            (mavutil.mavlink.MAVLINK_MSG_ID_SYS_STATUS, 1/2*1e6),           # 1 Hz  - interval in [us]
+            (mavutil.mavlink.MAVLINK_MSG_ID_RC_CHANNELS_RAW, 1/5*1e6)       # 5 Hz  - interval in [us]
         ]
 
         # Enable just the necessary messages
@@ -99,7 +97,8 @@ class NFC25Autopilot:
             'VFR_HUD': self._handleVfrHud,
             'ATTITUDE': self._handleAttitude,
             'RAW_IMU': self._handleRawImu,
-            'SYS_STATUS': self._handleSysStatus
+            'SYS_STATUS': self._handleSysStatus,
+            'RC_CHANNELS_RAW': self._handleRCChannelsRaw
         }
 
         # Configure nescassary streams
@@ -152,6 +151,10 @@ class NFC25Autopilot:
                 self.telem_data['bat_voltage'] = msg.voltage_battery/1e3 # Convert to [V]
                 self.telem_data['bat_current'] = msg.current_battery/1e2 # Convert to [A]
 
+    def _handleRCChannelsRaw(self, msg):
+        if hasattr(msg, 'chan1_raw') and hasattr(msg, 'chan2_raw'):
+            # TODO: Implement RC channel handling - Carefull! Test With Transmitter
+            pass
     
     # ======== LoRa Telemetry Thread ========
     # Thread to send telemetry data via LoRa at specified frequency
@@ -164,7 +167,7 @@ class NFC25Autopilot:
                 # Format telemetry data as CSV string with unix timestamp as first field
                 with self.data_lock:
                     telemetry_csv = (
-                        f"{time.time():.2f},"  # replaced telem_counter with timestamp
+                        f"{time.time():.2f},"  # Unix timestamp
                         f"{self.telem_data['angle_of_attack']:.2f},"
                         f"{self.telem_data['altitude']:.2f},"
                         f"{self.telem_data['g_force']:.2f},"

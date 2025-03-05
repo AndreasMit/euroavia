@@ -1,0 +1,12 @@
+TODO: 
+    - Make sure RC is ok
+    - Bidirectional Communication
+
+
+
+Recently Done:
+    main_rasp_code.py
+        - Added RC channel Support
+    
+    Auxiliary Material
+        restart_time_rasp_pi.sh
