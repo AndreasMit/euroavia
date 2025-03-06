@@ -28,6 +28,7 @@ TELEM_FREQ = 2            # Rasp -> GCS Telemetry frequency [Hz]
 TELEM_PERIOD = 2          # Every 2 seconds, pause telemetry sending for ...
 TELEM_PAUSE_TIME = 1     # ... 1 second
 
+RCV_COMPL_CMD_PERIOD = 3  # Period to consider a command complete [s]
 # ---------------------------------------------
 
 
@@ -44,6 +45,12 @@ class NFC25Autopilot:
         self.telem_data = {
             'angle_of_attack': 0,
             'altitude': 0,
+            'latitude': 0,
+            'longitude': 0,
+            'vx': 0,        # Ground speed in m/s - X Latitude Positive North
+            'vy': 0,        # Ground speed in m/s - Y Longitude Positive East
+            'vz': 0,        # Ground speed in m/s - Z Altitude Positive Down
+            'v_norm': 0,    # Ground speed in m/s - Norm of the velocity vector
             'imu_raw': {'x': 0, 'y': 0, 'z': 0},
             'g_force': 0,
             'bat_voltage': 0,
@@ -65,6 +72,8 @@ class NFC25Autopilot:
         self.command_buffer = ""
         self.buffer_timeout = time.time()
         self.MAX_BUFFER_AGE = 1    # Max age of buffer in seconds
+        self.last_command = ""
+        self.last_complete_cmd_time = 0
 
         self.GROUND_START_PTRN = GROUND_START_PTRN
         self.GROUND_END_PTRN = GROUND_END_PTRN
@@ -116,7 +125,8 @@ class NFC25Autopilot:
             'ATTITUDE': self._handleAttitude,
             'RAW_IMU': self._handleRawImu,
             'SYS_STATUS': self._handleSysStatus,
-            'RC_CHANNELS_RAW': self._handleRCChannelsRaw
+            'RC_CHANNELS_RAW': self._handleRCChannelsRaw,
+            'GLOBAL_POSITION_INT': self._handleGlobalPositionInt
         }
 
         # Configure nescassary streams
@@ -174,6 +184,16 @@ class NFC25Autopilot:
             # TODO: Implement RC channel handling - Carefull! Test With Transmitter
             pass
     
+    def _handleGlobalPositionInt(self, msg):
+        if hasattr(msg, 'lat') and hasattr(msg, 'vx') and hasattr(msg, 'vy'):
+            with self.data_lock:
+                self.telem_data['latitude'] = msg.lat/1e7   
+                self.telem_data['longitude'] = msg.lon/1e7
+                self.telem_data['vx'] = msg.vx/100          # cm/s -> m/s
+                self.telem_data['vy'] = msg.vy/100          # cm/s -> m/s
+                self.telem_data['vz'] = msg.vz/100          # cm/s -> m/s
+                self.telem_data['v_norm'] = (msg.vx**2 + msg.vy**2 + msg.vz**2)**0.5/100  # cm/s -> m/s
+    
     # =================== LoRa Telemetry Thread =========================================
     # Thread to send telemetry data via LoRa at specified frequency
     def _sendTelemetryData(self):
@@ -209,10 +229,13 @@ class NFC25Autopilot:
                             f"{self.telem_data['g_force']:.2f},"
                             f"{self.telem_data['bat_voltage']:.2f},"
                             f"{self.telem_data['bat_current']:.2f},"
-                            f"{self.telem_data['imu_raw']['x']:.2f},"
-                            f"{self.telem_data['imu_raw']['y']:.2f},"
-                            f"{self.telem_data['imu_raw']['z']:.2f}\n"
+                            f"{self.telem_data['latitude']:.7f},"
+                            f"{self.telem_data['longitude']:.7f},"
+                            f"{self.telem_data['v_norm']:.2f}"
                         )
+                        # Append command flag (1 if a complete command was received in the last 5 seconds, else 0)
+                        command_flag = 1 if (time.time() - self.last_complete_cmd_time) < RCV_COMPL_CMD_PERIOD else 0
+                        telemetry_csv += f",{command_flag}\n"
                     if self.lora_lock.acquire(timeout=0.1):
                         try:
                             self.lora_node.send(telemetry_csv.encode())
@@ -292,8 +315,18 @@ class NFC25Autopilot:
                         cmd_start = start_pos + len(self.GROUND_START_PTRN)
                         cmd = self.command_buffer[cmd_start:end_pos]
                         
-                        # Process the command appropriately
-                        self._processLoraCommand(cmd)
+
+                        # Check for duplicate message
+                        if cmd == self.last_command and (time.time() - self.last_complete_cmd_time) < RCV_COMPL_CMD_PERIOD:
+                            # Ignore duplicate command
+                            print(f"ARDUPILOT: Duplicate command received: {cmd}")
+                        else:
+                            # Handle the command
+                            self.last_command = cmd
+                            self.last_complete_cmd_time = time.time()
+                            
+                            # Process the command appropriately -------------
+                            self._processLoraCommand(cmd)
 
                         # Remove the processed command from buffer
                         self.command_buffer = self.command_buffer[end_pos + len(self.GROUND_END_PTRN):]

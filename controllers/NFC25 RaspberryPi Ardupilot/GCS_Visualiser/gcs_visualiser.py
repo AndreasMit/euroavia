@@ -28,7 +28,7 @@ if SAVE_TO_FILE:
     csv_writer = csv.writer(csv_file)
     # Write header row to CSV
     csv_writer.writerow(["Timestamp", "Latency (ms)", "Freq (Hz)", "Angle of Attack", "Altitude", 
-                           "G-Force", "Battery Voltage", "Battery Current", "IMU X", "IMU Y", "IMU Z", "Cmd Received"])
+                           "G-Force", "Battery Voltage", "Battery Current", "Latitude", "Longitude", "Speed", "Cmd Received"])
 
 # Initialize serial connection to read telemetry data
 ser = serial.Serial(SERIAL_PORT, BAUD_RATE, timeout=1)
@@ -44,8 +44,9 @@ root.title("GCS Telemetry Visualiser")
 root.attributes("-topmost", True)  # Ensure main window stays on top
 
 # -------------------- GUI Labels Setup --------------------
+# Update labels to reflect new telemetry payload
 labels_text = ["Timestamp", "Latency (ms)", "Freq (Hz)", "Angle of Attack", "Altitude", 
-               "G-Force", "Battery Voltage", "Battery Current", "IMU X", "IMU Y", "IMU Z", "Cmd Received"]
+               "G-Force", "Battery Voltage", "Battery Current", "Latitude", "Longitude", "Speed", "Cmd Received"]
 labels = {}
 for i, text in enumerate(labels_text):
     tk.Label(root, text=text+":", font=("Arial", 12)).grid(row=i, column=0, padx=5, pady=2, sticky="e")
@@ -64,6 +65,9 @@ def update_gui():
             raw_line = ser.readline()
             line = raw_line.decode('utf-8', errors='replace').strip()
             parts = line.split(',')
+            # Expecting 10 fields:
+            # 0: Timestamp, 1: Angle, 2: Altitude, 3: G-Force, 4: Bat Voltage, 5: Bat Current,
+            # 6: Latitude, 7: Longitude, 8: Speed, 9: Cmd Received
             if len(parts) == 10:
                 current_msg_timestamp = float(parts[0])
                 latency = (time.time() - current_msg_timestamp) * 1000  
@@ -74,9 +78,8 @@ def update_gui():
                     freq = 0
                 prev_msg_timestamp = current_msg_timestamp
                 
-                # Map telemetry values to corresponding labels
                 data_map = {
-                    "Timestamp": f"{parts[0]}",
+                    "Timestamp": parts[0],
                     "Latency (ms)": f"{latency:.0f}",
                     "Freq (Hz)": f"{freq:.1f}",
                     "Angle of Attack": parts[1],
@@ -84,9 +87,9 @@ def update_gui():
                     "G-Force": parts[3],
                     "Battery Voltage": parts[4],
                     "Battery Current": parts[5],
-                    "IMU X": parts[6],
-                    "IMU Y": parts[7],
-                    "IMU Z": parts[8],
+                    "Latitude": parts[6],
+                    "Longitude": parts[7],
+                    "Speed": parts[8],
                     "Cmd Received": parts[9]
                 }
                 for key, val in data_map.items():
