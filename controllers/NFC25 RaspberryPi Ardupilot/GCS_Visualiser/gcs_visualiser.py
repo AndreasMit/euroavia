@@ -4,6 +4,7 @@ import serial
 import time
 import csv                     # For CSV writing
 from datetime import datetime  # For timestamped filenames
+import math                    # For distance calculation
 
 # -------------------- Configuration Parameters --------------------
 SERIAL_PORT = 'COM12'         # Serial port to connect to the GCS device
@@ -18,6 +19,31 @@ COMMAND_NUMBER_SEND = 7       # Total number of times to send a command
 # ----- Pattern Definitions for Commands -----
 START_PATTERN = "/*"
 END_PATTERN = "*/"
+
+# ----- Ground Distance Calculation Configuration -----
+lat_home, lon_home = 37.9780196, 23.783700  # Home coordinates for distance calculation
+
+# =================== Helper Functions ===================
+# Haversine distance calculation function from test.py
+def haversine_distance(lat1, lon1, lat2, lon2):
+    """Calculate the great-circle distance between two points on Earth."""
+    # Earth's radius in meters
+    R_earth = 6371000
+    
+    # Convert latitudes and longitudes from degrees to radians
+    lat1, lon1, lat2, lon2 = map(math.radians, [lat1, lon1, lat2, lon2])
+    
+    # Differences in coordinates
+    dlat = lat2 - lat1
+    dlon = lon2 - lon1
+    
+    # Haversine formula components
+    a = math.sin(dlat / 2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon / 2)**2
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    
+    # Distance between the two points in meters
+    distance = R_earth * c
+    return distance
 
 # =================== CSV and Serial Initialization ===================
 # Initialize CSV file for logging if enabled
@@ -44,9 +70,10 @@ root.title("GCS Telemetry Visualiser")
 root.attributes("-topmost", True)  # Ensure main window stays on top
 
 # -------------------- GUI Labels Setup --------------------
-# Update labels to reflect new telemetry payload
+# Update labels to include Ground Distance
 labels_text = ["Timestamp", "Latency (ms)", "Freq (Hz)", "Angle of Attack", "Altitude", 
-               "G-Force", "Battery Voltage", "Battery Current", "Latitude", "Longitude", "Speed", "Cmd Received"]
+               "G-Force", "Battery Voltage", "Battery Current", "Latitude", "Longitude", 
+               "Speed", "Ground Distance", "Cmd Received"]
 labels = {}
 for i, text in enumerate(labels_text):
     tk.Label(root, text=text+":", font=("Arial", 12)).grid(row=i, column=0, padx=5, pady=2, sticky="e")
@@ -78,6 +105,17 @@ def update_gui():
                     freq = 0
                 prev_msg_timestamp = current_msg_timestamp
                 
+                # Calculate ground distance if we have valid coordinates
+                ground_distance = "N/A"
+                try:
+                    lat = float(parts[6])
+                    lon = float(parts[7])
+                    if lat != 0 and lon != 0:  # Make sure we have real coordinates
+                        distance = haversine_distance(lat_home, lon_home, lat, lon)
+                        ground_distance = f"{distance:.1f} m"
+                except (ValueError, IndexError):
+                    print(f"Error calculating distance: {parts[6]}, {parts[7]} \t Error: {ValueError} - {IndexError}")
+                
                 data_map = {
                     "Timestamp": parts[0],
                     "Latency (ms)": f"{latency:.0f}",
@@ -90,6 +128,7 @@ def update_gui():
                     "Latitude": parts[6],
                     "Longitude": parts[7],
                     "Speed": parts[8],
+                    "Ground Distance": ground_distance,
                     "Cmd Received": parts[9]
                 }
                 for key, val in data_map.items():
