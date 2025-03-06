@@ -23,6 +23,12 @@ END_PATTERN = "*/"
 # ----- Ground Distance Calculation Configuration -----
 lat_home, lon_home = 37.9780196, 23.783700  # Home coordinates for distance calculation
 
+# ----- Button Colors -----
+BUTTON_DEFAULT_COLOR = "SystemButtonFace"  # Default button color
+BUTTON_WAITING_COLOR = "yellow"            # When command is sent but not confirmed
+BUTTON_SUCCESS_COLOR = "green"             # When command is confirmed (received flag = 1)
+BUTTON_FAILED_COLOR = "red"                # When command times out without confirmation
+
 # =================== Helper Functions ===================
 # Haversine distance calculation function from test.py
 def haversine_distance(lat1, lon1, lat2, lon2):
@@ -63,6 +69,12 @@ ser = serial.Serial(SERIAL_PORT, BAUD_RATE, timeout=1)
 telemetry_paused = False  # Pauses telemetry reading during command send
 prev_msg_timestamp = None
 
+# Global variables for command status tracking
+command_sent_time = 0
+waiting_for_confirmation = False
+success_time = 0
+button_reset_after = None
+
 # =================== Main Window Creation ===================
 # Create and configure the main telemetry display window
 root = tk.Tk()
@@ -83,7 +95,18 @@ for i, text in enumerate(labels_text):
 # =================== Telemetry Update Function ===================
 def update_gui():
     """Reads telemetry from serial port and updates GUI labels."""
-    global prev_msg_timestamp
+    global prev_msg_timestamp, waiting_for_confirmation, success_time, button_reset_after
+    
+    # Check for button color reset after success
+    if button_reset_after is not None and time.time() >= button_reset_after:
+        send_button.config(bg=BUTTON_DEFAULT_COLOR)
+        button_reset_after = None
+    
+    # Check for command timeout (5 seconds without confirmation)
+    if waiting_for_confirmation and time.time() - command_sent_time > 5:
+        send_button.config(bg=BUTTON_FAILED_COLOR)
+        waiting_for_confirmation = False
+    
     if telemetry_paused:
         root.after(GUI_REFRESH_RATE, update_gui)
         return
@@ -115,6 +138,14 @@ def update_gui():
                         ground_distance = f"{distance:.1f} m"
                 except (ValueError, IndexError):
                     print(f"Error calculating distance: {parts[6]}, {parts[7]} \t Error: {ValueError} - {IndexError}")
+                
+                # Process command received flag
+                if waiting_for_confirmation and parts[9] == "1":
+                    # Command was received successfully
+                    waiting_for_confirmation = False
+                    success_time = time.time()
+                    send_button.config(bg=BUTTON_SUCCESS_COLOR)
+                    button_reset_after = time.time() + 2  # Reset to default after 2 seconds
                 
                 data_map = {
                     "Timestamp": parts[0],
@@ -159,10 +190,19 @@ def repeat_send(i, command):
 
 def send_command():
     """Initiates the command send sequence by extracting command text."""
-    global telemetry_paused
+    global telemetry_paused, command_sent_time, waiting_for_confirmation
     command = command_entry.get().strip()
     if command:
         telemetry_paused = True  # Pause telemetry reading during command send
+        
+        # Update command tracking variables
+        command_sent_time = time.time()
+        waiting_for_confirmation = True
+        
+        # Set button to yellow to indicate waiting for confirmation
+        send_button.config(bg=BUTTON_WAITING_COLOR)
+        
+        # Start sending the command
         repeat_send(0, command)
 
 # =================== Command Sender Window ===================
