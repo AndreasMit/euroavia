@@ -5,9 +5,11 @@ import time
 import csv                     # For CSV writing
 from datetime import datetime  # For timestamped filenames
 import math                    # For distance calculation
+import random                  # For test mode data generation
 
 # -------------------- Configuration Parameters --------------------
 SERIAL_PORT = 'COM12'         # Serial port to connect to the GCS device
+SERIAL_PORT = 'TEST'        # Uncomment to activate test mode
 BAUD_RATE = 9600              # Baud rate for serial communication
 GUI_REFRESH_RATE = 100        # GUI update interval in milliseconds
 SAVE_TO_FILE = False          # Set to True to enable CSV logging
@@ -28,6 +30,12 @@ BUTTON_DEFAULT_COLOR = "SystemButtonFace"  # Default button color
 BUTTON_WAITING_COLOR = "yellow"            # When command is sent but not confirmed
 BUTTON_SUCCESS_COLOR = "green"             # When command is confirmed (received flag = 1)
 BUTTON_FAILED_COLOR = "red"                # When command times out without confirmation
+
+# ----- Test Mode Configuration -----
+TEST_MODE = SERIAL_PORT == 'TEST'  # Flag to determine if we're in test mode
+last_test_data_time = time.time()  # Track time of last test data generation
+test_cmd_received = "0"           # Command received flag for test mode
+test_cmd_received_time = 0        # Time when command was last received
 
 # =================== Helper Functions ===================
 # Haversine distance calculation function from test.py
@@ -51,6 +59,68 @@ def haversine_distance(lat1, lon1, lat2, lon2):
     distance = R_earth * c
     return distance
 
+# =================== Test Mode Functions ===================
+def generate_test_telemetry():
+    """Generate simulated telemetry data for test mode."""
+    global test_cmd_received, last_test_data_time, test_cmd_received_time
+    
+    # Create simulated data with some variance to look realistic
+    timestamp = time.time()
+    angle = round(random.uniform(0, 15), 1)
+    altitude = round(random.uniform(100, 500), 1)
+    g_force = round(random.uniform(0.9, 1.2), 2)
+    voltage = round(random.uniform(11.1, 12.6), 2)
+    current = round(random.uniform(0.5, 2.0), 2)
+    
+    # Simulated flight path - circular pattern around home coordinates
+    t = (time.time() % 60) / 60 * 2 * math.pi  # Complete circle every 60 seconds
+    radius = 0.001  # Roughly 100m at equator
+    lat = lat_home + radius * math.sin(t)
+    lon = lon_home + radius * math.cos(t)
+    
+    speed = round(random.uniform(5, 15), 1)
+    
+    # Keep command received flag as "1" for 3 seconds after receiving a command, with 70% probability
+    if test_cmd_received == "1":
+        if time.time() - test_cmd_received_time > 3 or random.random() > 0.7:
+            test_cmd_received = "0"
+            print("Test mode: Command received flag reset")
+    
+    last_test_data_time = time.time()
+    
+    # Format as CSV string similar to what would come from serial
+    telemetry_str = f"{timestamp:.2f},{angle},{altitude},{g_force},{voltage},{current},{lat:.6f},{lon:.6f},{speed},{test_cmd_received}"
+    return telemetry_str.encode('utf-8')
+
+class TestSerial:
+    """Mock Serial class for test mode."""
+    def __init__(self):
+        self.in_waiting = True
+        self.last_data_time = time.time() - 0.5  # Initialize to generate data immediately
+    
+    def readline(self):
+        """Simulate reading a line from serial port."""
+        # Generate new data approximately at the rate we would receive it
+        current_time = time.time()
+        if current_time - self.last_data_time >= 0.5:  # Simulate ~2Hz telemetry
+            self.last_data_time = current_time
+            self.in_waiting = True
+            return generate_test_telemetry()
+        # No data ready yet
+        self.in_waiting = False
+        return b""
+    
+    def write(self, data):
+        """Simulate writing to serial port."""
+        global test_cmd_received, test_cmd_received_time
+        print(f"Test mode: Command sent: {data.decode('utf-8').strip()}")
+        # 70% chance of successful command reception for testing both success and failure cases
+        if random.random() < 0.7:
+            test_cmd_received = "1"
+            test_cmd_received_time = time.time()  # Record when command was received
+            print("Test mode: Command received successfully")
+        return len(data)
+
 # =================== CSV and Serial Initialization ===================
 # Initialize CSV file for logging if enabled
 if SAVE_TO_FILE:
@@ -63,7 +133,11 @@ if SAVE_TO_FILE:
                            "G-Force", "Battery Voltage", "Battery Current", "Latitude", "Longitude", "Speed", "Cmd Received"])
 
 # Initialize serial connection to read telemetry data
-ser = serial.Serial(SERIAL_PORT, BAUD_RATE, timeout=1)
+if TEST_MODE:
+    print("\n\nRUNNING IN TEST MODE - Simulating telemetry data")
+    ser = TestSerial()
+else:
+    ser = serial.Serial(SERIAL_PORT, BAUD_RATE, timeout=1)
 
 # Global flags and variables for telemetry handling
 telemetry_paused = False  # Pauses telemetry reading during command send
@@ -111,8 +185,14 @@ def update_gui():
         root.after(GUI_REFRESH_RATE, update_gui)
         return
     try:
-        if ser.in_waiting:
+        # In test mode, we always check for data since TestSerial.in_waiting is managed differently
+        if TEST_MODE or ser.in_waiting:
             raw_line = ser.readline()
+            # Skip empty lines (happens in test mode when no new data is ready)
+            if not raw_line:
+                root.after(GUI_REFRESH_RATE, update_gui)
+                return
+                
             line = raw_line.decode('utf-8', errors='replace').strip()
             parts = line.split(',')
             # Expecting 10 fields:
@@ -139,7 +219,7 @@ def update_gui():
                 except (ValueError, IndexError):
                     print(f"Error calculating distance: {parts[6]}, {parts[7]} \t Error: {ValueError} - {IndexError}")
                 
-                # Process command received flag
+                # Process command received flag - fixing the issue where test_cmd_received never shows as "1" in the UI
                 if waiting_for_confirmation and parts[9] == "1":
                     # Command was received successfully
                     waiting_for_confirmation = False
@@ -169,7 +249,12 @@ def update_gui():
                     csv_file.flush()
     except Exception as e:
         print("Error reading serial:", e)
-    root.after(GUI_REFRESH_RATE, update_gui)  # Schedule the next update
+    
+    # Force update more frequently in test mode to catch command confirmation
+    if TEST_MODE:
+        root.after(50, update_gui)  # Update more frequently in test mode
+    else:
+        root.after(GUI_REFRESH_RATE, update_gui)  # Schedule the next update
 
 # =================== Command Sender Functions ===================
 def repeat_send(i, command):
@@ -187,6 +272,11 @@ def repeat_send(i, command):
         root.after(int(COMMAND_SEND_DELAY * 1000), lambda: repeat_send(i+1, command))
     else:
         telemetry_paused = False  # Resume telemetry after sending finished
+        
+        # This ensures the last command sent will be properly detected in test mode
+        if TEST_MODE:
+            # Force a refresh of the GUI to immediately show command status
+            update_gui()
 
 def send_command():
     """Initiates the command send sequence by extracting command text."""
