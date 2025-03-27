@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flight Map Visualiser</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+        #map {
+            height: 100vh;
+            width: 100%;
+        }
+        .info-box {
+            padding: 10px;
+            background: white;
+            border-radius: 5px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.2);
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        .info-box h4 {
+            margin: 0 0 5px;
+            font-size: 16px;
+        }
+        .info-box p {
+            margin: 5px 0;
+            font-size: 14px;
+        }
+        .status {
+            font-weight: bold;
+        }
+        .disconnected {
+            color: red;
+        }
+        .connected {
+            color: green;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <div class="info-box">
+        <h4>Flight Telemetry</h4>
+        <p>Status: <span id="connection-status" class="status disconnected">Disconnected</span></p>
+        <p>Aircraft Position: <span id="aircraft-position">--</span></p>
+        <p>Home Position: <span id="home-position">--</span></p>
+        <p>Distance: <span id="distance">--</span> m</p>
+        <p>Altitude: <span id="altitude">--</span> m</p>
+        <p>Speed: <span id="speed">--</span> m/s</p>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script>
+        // Initialize map centered at a default position
+        const map = L.map('map').setView([37.9780196, 23.783700], 15);
+
+        // Add OpenStreetMap tiles
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        // Create markers for home and aircraft positions
+        const homeIcon = L.divIcon({
+            className: 'home-icon',
+            html: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="32" height="32"><path d="M12 2L2 12h3v8h6v-6h2v6h6v-8h3L12 2z" fill="#3498db"/></svg>',
+            iconSize: [32, 32],
+            iconAnchor: [16, 32],
+            popupAnchor: [0, -32]
+        });
+
+        const aircraftIcon = L.divIcon({
+            className: 'aircraft-icon',
+            html: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="32" height="32"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" fill="#e74c3c"/></svg>',
+            iconSize: [32, 32],
+            iconAnchor: [16, 16],
+            popupAnchor: [0, -16]
+        });
+
+        const homeMarker = L.marker([37.9780196, 23.783700], {icon: homeIcon}).addTo(map);
+        homeMarker.bindPopup("Home Position");
+
+        const aircraftMarker = L.marker([37.9780196, 23.783700], {icon: aircraftIcon}).addTo(map);
+        aircraftMarker.bindPopup("Aircraft Position");
+
+        // Add a line to connect home and aircraft
+        const flightPath = L.polyline([], {color: 'blue', weight: 3}).addTo(map);
+        const trackPoints = [];
+
+        // Update UI elements
+        const connectionStatus = document.getElementById('connection-status');
+        const aircraftPosition = document.getElementById('aircraft-position');
+        const homePosition = document.getElementById('home-position');
+        const distanceElement = document.getElementById('distance');
+        const altitudeElement = document.getElementById('altitude');
+        const speedElement = document.getElementById('speed');
+
+        // Function to calculate distance between two points
+        function haversineDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371000; // Earth's radius in meters
+            const φ1 = lat1 * Math.PI / 180;
+            const φ2 = lat2 * Math.PI / 180;
+            const Δφ = (lat2 - lat1) * Math.PI / 180;
+            const Δλ = (lon2 - lon1) * Math.PI / 180;
+
+            const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+                    Math.cos(φ1) * Math.cos(φ2) *
+                    Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            return R * c;
+        }
+
+        // WebSocket connection
+        let socket;
+        const connectWebSocket = () => {
+            socket = new WebSocket("ws://localhost:8765");
+
+            socket.onopen = () => {
+                console.log("WebSocket connected");
+                connectionStatus.textContent = "Connected";
+                connectionStatus.classList.remove("disconnected");
+                connectionStatus.classList.add("connected");
+            };
+
+            socket.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    
+                    // Update home position if set
+                    if (data.home_lat && data.home_lon) {
+                        const homeLat = parseFloat(data.home_lat);
+                        const homeLon = parseFloat(data.home_lon);
+                        homeMarker.setLatLng([homeLat, homeLon]);
+                        homePosition.textContent = `${homeLat.toFixed(6)}, ${homeLon.toFixed(6)}`;
+                    }
+                    
+                    // Update aircraft position
+                    if (data.lat && data.lon) {
+                        const lat = parseFloat(data.lat);
+                        const lon = parseFloat(data.lon);
+                        
+                        // Only update if we have valid coordinates
+                        if (lat !== 0 && lon !== 0) {
+                            aircraftMarker.setLatLng([lat, lon]);
+                            aircraftPosition.textContent = `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
+                            
+                            // Add point to track
+                            trackPoints.push([lat, lon]);
+                            if (trackPoints.length > 50) {
+                                trackPoints.shift(); // Keep track history to 50 points
+                            }
+                            flightPath.setLatLngs(trackPoints);
+                            
+                            // Fit bounds to see both markers
+                            const homeLat = homeMarker.getLatLng().lat;
+                            const homeLon = homeMarker.getLatLng().lng;
+                            const bounds = L.latLngBounds([lat, lon], [homeLat, homeLon]);
+                            map.fitBounds(bounds, { padding: [50, 50] });
+                            
+                            // Calculate and display distance
+                            const distance = haversineDistance(homeLat, homeLon, lat, lon);
+                            distanceElement.textContent = `${distance.toFixed(1)}`;
+                        }
+                    }
+                    
+                    // Update additional telemetry data
+                    if (data.altitude) {
+                        altitudeElement.textContent = `${data.altitude}`;
+                    }
+                    
+                    if (data.speed) {
+                        speedElement.textContent = `${data.speed}`;
+                    }
+                } catch (error) {
+                    console.error("Error parsing WebSocket message:", error);
+                }
+            };
+
+            socket.onclose = () => {
+                console.log("WebSocket disconnected");
+                connectionStatus.textContent = "Disconnected";
+                connectionStatus.classList.remove("connected");
+                connectionStatus.classList.add("disconnected");
+                // Try to reconnect after 5 seconds
+                setTimeout(connectWebSocket, 5000);
+            };
+
+            socket.onerror = (error) => {
+                console.error("WebSocket error:", error);
+                connectionStatus.textContent = "Connection Error";
+                connectionStatus.classList.remove("connected");
+                connectionStatus.classList.add("disconnected");
+            };
+        };
+
+        // Initial WebSocket connection
+        connectWebSocket();
+    </script>
+</body>
+</html>

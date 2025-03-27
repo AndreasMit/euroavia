@@ -2,17 +2,27 @@
 import tkinter as tk
 import serial
 import time
+import sys
+import signal
 import csv                     # For CSV writing
 from datetime import datetime  # For timestamped filenames
 import math                    # For distance calculation
 import random                  # For test mode data generation
+import json                    # For JSON formatting
+import asyncio                 # For async WebSocket server
+import websockets               # For WebSocket functionality
+import threading               # For running WebSocket server in a thread
+import webbrowser              # For opening the HTML map visualization
+import os                      # For file path handling
 
 # -------------------- Configuration Parameters --------------------
-SERIAL_PORT = 'COM12'         # Serial port to connect to the GCS device
-SERIAL_PORT = 'TEST'        # Uncomment to activate test mode
+# SERIAL_PORT = 'COM12'         # Serial port to connect to the GCS device
+SERIAL_PORT = 'TEST'          # Uncomment to activate test mode
 BAUD_RATE = 9600              # Baud rate for serial communication
 GUI_REFRESH_RATE = 100        # GUI update interval in milliseconds
 SAVE_TO_FILE = False          # Set to True to enable CSV logging
+WEBSOCKET_PORT = 8765         # Port for WebSocket server
+ENABLE_MAP = True             # Enable map visualization
 
 # ----- Command Sender Configuration (customizable) -----
 COMMAND_SEND_DELAY = 0.5      # Delay in seconds between command sends
@@ -23,7 +33,7 @@ START_PATTERN = "/*"
 END_PATTERN = "*/"
 
 # ----- Ground Distance Calculation Configuration -----
-lat_home, lon_home = 37.9780196, 23.783700  # Home coordinates for distance calculation
+lat_home, lon_home = 37.977864, 23.783953  # Home coordinates for distance calculation
 
 # ----- Button Colors -----
 BUTTON_DEFAULT_COLOR = "SystemButtonFace"  # Default button color
@@ -37,8 +47,62 @@ last_test_data_time = time.time()  # Track time of last test data generation
 test_cmd_received = "0"           # Command received flag for test mode
 test_cmd_received_time = 0        # Time when command was last received
 
+# =================== WebSocket Server ===================
+# Global list of connected WebSocket clients
+clients = set()
+# Latest telemetry data to send to new clients
+latest_telemetry = {}
+
+# WebSocket server handler
+async def websocket_handler(websocket, path):
+    """Handle WebSocket connections and broadcast telemetry data."""
+    # Register new client
+    clients.add(websocket)
+    try:
+        # Send latest telemetry data to the new client
+        if latest_telemetry:
+            await websocket.send(json.dumps(latest_telemetry))
+        
+        # Keep connection alive and handle client messages if needed
+        async for message in websocket:
+            # Process client messages if needed
+            pass
+    except websockets.exceptions.ConnectionClosed:
+        pass
+    finally:
+        # Unregister client on disconnection
+        clients.remove(websocket)
+
+# Function to broadcast telemetry data to all connected clients
+async def broadcast_telemetry(data):
+    """Send telemetry data to all connected WebSocket clients."""
+    global latest_telemetry
+    latest_telemetry = data
+    if clients:  # Check if there are any connected clients
+        # Create message tasks for each client
+        disconnected_clients = set()
+        for client in clients:
+            try:
+                await client.send(json.dumps(data))
+            except websockets.exceptions.ConnectionClosed:
+                disconnected_clients.add(client)
+        
+        # Remove disconnected clients
+        for client in disconnected_clients:
+            clients.remove(client)
+
+# Function to start the WebSocket server in a separate thread
+def start_websocket_server():
+    """Start the WebSocket server in a background thread."""
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    start_server = websockets.serve(
+        websocket_handler, "localhost", WEBSOCKET_PORT
+    )
+    loop.run_until_complete(start_server)
+    loop.run_forever()
+
 # =================== Helper Functions ===================
-# Haversine distance calculation function from test.py
 def haversine_distance(lat1, lon1, lat2, lon2):
     """Calculate the great-circle distance between two points on Earth."""
     # Earth's radius in meters
@@ -121,11 +185,20 @@ class TestSerial:
             print("Test mode: Command received successfully")
         return len(data)
 
+# Initialize the WebSocket event loop that we'll use for broadcasting
+websocket_loop = None
+
+def launch_map_visualization():
+    """Open the map visualization in the default web browser."""
+    map_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "map_visualiser.html")
+    webbrowser.open('file://' + map_path)
+    print(f"Opening map visualization: {map_path}")
+
 # =================== CSV and Serial Initialization ===================
 # Initialize CSV file for logging if enabled
 if SAVE_TO_FILE:
     start_time = datetime.now()
-    filename = "GCS_Visualiser/Incoming_Telemetry_CSV" + start_time.strftime("%Y%m%d_%H%M%S") + ".csv"
+    filename = "GCS_Visualiser/Incoming_Telemetry_CSV/" + start_time.strftime("%Y%m%d_%H%M%S") + ".csv"
     csv_file = open(filename, "w", newline="")
     csv_writer = csv.writer(csv_file)
     # Write header row to CSV
@@ -165,6 +238,12 @@ for i, text in enumerate(labels_text):
     tk.Label(root, text=text+":", font=("Arial", 12)).grid(row=i, column=0, padx=5, pady=2, sticky="e")
     labels[text] = tk.Label(root, text="N/A", font=("Arial", 12))
     labels[text].grid(row=i, column=1, padx=5, pady=2, sticky="w")
+
+# Add a button to open map visualization
+if ENABLE_MAP:
+    map_button = tk.Button(root, text="Open Map Visualization", font=("Arial", 12), 
+                          command=launch_map_visualization)
+    map_button.grid(row=len(labels_text), column=0, columnspan=2, padx=5, pady=10)
 
 # =================== Telemetry Update Function ===================
 def update_gui():
@@ -247,6 +326,26 @@ def update_gui():
                 if SAVE_TO_FILE:
                     csv_writer.writerow([data_map[key] for key in labels_text])
                     csv_file.flush()
+                
+                # Send data to WebSocket clients if the feature is enabled
+                if ENABLE_MAP and websocket_loop:
+                    # Create a simplified data structure for the map visualization
+                    websocket_data = {
+                        "timestamp": float(parts[0]),
+                        "altitude": float(parts[2]),
+                        "lat": float(parts[6]),
+                        "lon": float(parts[7]),
+                        "speed": float(parts[8]),
+                        "home_lat": lat_home,
+                        "home_lon": lon_home,
+                        "distance": ground_distance.replace(" m", "")
+                    }
+                    
+                    # Use asyncio to schedule the broadcast in the WebSocket event loop
+                    asyncio.run_coroutine_threadsafe(
+                        broadcast_telemetry(websocket_data), 
+                        websocket_loop
+                    )
     except Exception as e:
         print("Error reading serial:", e)
     
@@ -308,7 +407,47 @@ send_button.grid(row=1, column=0, columnspan=2, padx=5, pady=5)
 # Bind the Enter key to trigger send_command() for convenience
 command_entry.bind("<Return>", lambda event: send_command())
 
+# =================== Start WebSocket Server ===================
+if ENABLE_MAP:
+    # Create a thread for the WebSocket server
+    def run_websocket_server():
+        global websocket_loop
+        websocket_loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(websocket_loop)
+        server = websockets.serve(websocket_handler, "localhost", WEBSOCKET_PORT)
+        websocket_loop.run_until_complete(server)
+        print(f"WebSocket server started on ws://localhost:{WEBSOCKET_PORT}")
+        websocket_loop.run_forever()
+
+    # Start the WebSocket server in a separate thread
+    websocket_thread = threading.Thread(target=run_websocket_server, daemon=True)
+    websocket_thread.start()
+
 # =================== Application Main Loop ===================
+# Function to handle clean exit
+def on_closing():
+    """Clean up resources when the app is closed."""
+    if SAVE_TO_FILE and 'csv_file' in globals():
+        print("Closing CSV file...")
+        csv_file.close()
+    root.destroy()
+
+# Handle keyboard interrupts
+def handle_interrupt(sig, frame):
+    print("\nProgram interrupted by user. Cleaning up...")
+    on_closing()
+    sys.exit(0)
+
+# Register signal handlers for clean exit
+signal.signal(signal.SIGINT, handle_interrupt)
+
+# Register window close event
+root.protocol("WM_DELETE_WINDOW", on_closing)
+
 # Start the telemetry update loop and run the GUI
 update_gui()
 root.mainloop()
+
+# Additional cleanup in case mainloop exits normally
+if SAVE_TO_FILE and 'csv_file' in globals():
+    csv_file.close()
