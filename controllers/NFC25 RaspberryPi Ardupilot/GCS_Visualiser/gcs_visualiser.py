@@ -9,7 +9,7 @@ import threading               # For running WebSocket server in a thread
 from gcs_utils import *
 
 # -------------------- Configuration Parameters --------------------
-SERIAL_PORT = 'TEST'          # Use 'TEST' for test mode or 'COM12' for real device
+SERIAL_PORT = 'TEST'          # Use 'TEST' for test mode | 'COM12' for real device | 'FIND_COM_PORT' to list available COM ports
 BAUD_RATE = 9600              # Baud rate for serial communication
 GUI_REFRESH_RATE = 100        # GUI update interval in milliseconds
 SAVE_TO_FILE = False          # Set to True to enable CSV logging
@@ -53,6 +53,12 @@ plotable_fields = ["Angle of Attack", "Altitude", "G-Force", "Battery Voltage",
 plot_data = {field: {'x': [], 'y': []} for field in plotable_fields}
 current_plot_field = None
 plot_counter = 0
+
+# If the serial port is set to 'FIND_COM_PORT', print available COM ports
+if SERIAL_PORT == 'FIND_COM_PORT':
+    printAvailableCOMPorts()
+    # Terminate the script after printing available COM ports
+    sys.exit(0)
 
 # Keep track of all plot windows
 plot_windows = []
@@ -100,7 +106,7 @@ led_canvas.create_oval(1, 1, led_size+7, led_size+7, fill="silver", outline="#99
 led = led_canvas.create_oval(4, 4, led_size+4, led_size+4, fill="red", outline="black", width=1)
 led_canvas.create_arc(6, 6, led_size, led_size, start=40, extent=120, fill="white", outline="")
 
-def update_led_status():
+def updateLedStatus():
     if time.time() - last_telemetry_time < TELEMETRY_TIMEOUT:
         led_canvas.itemconfig(led, fill="green")
     else:
@@ -108,13 +114,13 @@ def update_led_status():
 
 # Add map visualization button
 if ENABLE_MAP:
-    def open_map():
+    def openMap():
         try:
             # Try to use the embedded map if available
             if EMBEDDED_MAP:
                 try:
-                    from embedded_map import create_embedded_map
-                    create_embedded_map(root, os.path.dirname(os.path.abspath(__file__)))
+                    from embedded_map import createEmbeddedMap
+                    createEmbeddedMap(root, os.path.dirname(os.path.abspath(__file__)))
                     return
                 except ImportError:
                     print("Embedded map module not available, falling back to browser")
@@ -127,23 +133,23 @@ if ENABLE_MAP:
             print(f"Error opening map visualization: {e}")
     
     map_button = tk.Button(root, text="Open Map Visualization", font=("Arial", 12), 
-                          command=open_map)
+                          command=openMap)
     map_button.grid(row=len(labels_text), column=0, columnspan=2, padx=5, pady=10)
 
 # =================== Telemetry Plot Window Creation ===================
-def create_plot_window():
+def createPlotWindow():
     """Creates a new telemetry plot window instance"""
     return PlotWindow(root, plot_data, plotable_fields, PLOT_WINDOW_SIZE, plot_counter, plot_windows)
 
 # Create the first plot window
-create_plot_window()
+createPlotWindow()
 
 # =================== GUI Update and Command Functions ===================
-def update_gui():
+def updateGui():
     global prev_msg_timestamp, waiting_for_confirmation, success_time, button_reset_after
     global last_telemetry_time, plot_counter
     
-    update_led_status()
+    updateLedStatus()
     
     if button_reset_after is not None and time.time() >= button_reset_after:
         send_button.config(bg=BUTTON_DEFAULT_COLOR)
@@ -154,13 +160,13 @@ def update_gui():
         waiting_for_confirmation = False
     
     if telemetry_paused:
-        root.after(GUI_REFRESH_RATE, update_gui)
+        root.after(GUI_REFRESH_RATE, updateGui)
         return
     try:
         if TEST_MODE or ser.in_waiting:
             raw_line = ser.readline()
             if not raw_line:
-                root.after(GUI_REFRESH_RATE, update_gui)
+                root.after(GUI_REFRESH_RATE, updateGui)
                 return
                 
             line = raw_line.decode('utf-8', errors='replace').strip()
@@ -182,7 +188,7 @@ def update_gui():
                     lat = float(parts[6])
                     lon = float(parts[7])
                     if lat != 0 and lon != 0:
-                        distance = haversine_distance(lat_home, lon_home, lat, lon)
+                        distance = haversineDistance(lat_home, lon_home, lat, lon)
                         ground_distance = f"{distance:.1f} m"
                 except (ValueError, IndexError):
                     print(f"Error calculating distance: {parts[6]}, {parts[7]} \t Error: {ValueError} - {IndexError}")
@@ -227,7 +233,7 @@ def update_gui():
                     plot_data["Freq (Hz)"]['y'].append(freq)
                     
                     # Update all plots using the utility function
-                    update_all_plots(plot_windows)
+                    updateAllPlots(plot_windows)
                     
                 except Exception as e:
                     print(f"Error updating plot data: {e}")
@@ -266,18 +272,18 @@ def update_gui():
                     }
                     
                     asyncio.run_coroutine_threadsafe(
-                        broadcast_telemetry(websocket_data), 
+                        broadcastTelemetry(websocket_data), 
                         websocket_loop
                     )
     except Exception as e:
         print("Error reading serial:", e)
     
     if TEST_MODE:
-        root.after(50, update_gui)
+        root.after(50, updateGui)
     else:
-        root.after(GUI_REFRESH_RATE, update_gui)
+        root.after(GUI_REFRESH_RATE, updateGui)
 
-def repeat_send(i, command):
+def repeatSend(i, command):
     """Recursively sends the command at intervals defined by COMMAND_SEND_DELAY."""
     global telemetry_paused
     if i < COMMAND_NUMBER_SEND:
@@ -289,15 +295,15 @@ def repeat_send(i, command):
         except Exception as e:
             print("Error sending command:", e)
         # Schedule next send after COMMAND_SEND_DELAY seconds (converted to milliseconds)
-        root.after(int(COMMAND_SEND_DELAY * 1000), lambda: repeat_send(i+1, command))
+        root.after(int(COMMAND_SEND_DELAY * 1000), lambda: repeatSend(i+1, command))
     else:
         telemetry_paused = False  # Resume telemetry after sending finished
         
         # This ensures the last command sent will be properly detected in test mode
         if TEST_MODE:
-            update_gui()
+            updateGui()
 
-def send_command():
+def sendCommand():
     global telemetry_paused, command_sent_time, waiting_for_confirmation
     command = command_entry.get().strip()
     if command:
@@ -311,7 +317,7 @@ def send_command():
         send_button.config(bg=BUTTON_WAITING_COLOR)
         
         # Start sending the command
-        repeat_send(0, command)
+        repeatSend(0, command)
 
 # =================== Command Sender Window ===================
 cmd_window = tk.Toplevel(root)
@@ -320,23 +326,23 @@ cmd_window.attributes("-topmost", True)
 tk.Label(cmd_window, text="Enter Command:", font=("Arial", 12)).grid(row=0, column=0, padx=5, pady=5)
 command_entry = tk.Entry(cmd_window, font=("Arial", 12), width=40)
 command_entry.grid(row=0, column=1, padx=5, pady=5)
-send_button = tk.Button(cmd_window, text="SEND", font=("Arial", 12), command=send_command)
+send_button = tk.Button(cmd_window, text="SEND", font=("Arial", 12), command=sendCommand)
 send_button.grid(row=1, column=0, columnspan=2, padx=5, pady=5)
-command_entry.bind("<Return>", lambda event: send_command())
+command_entry.bind("<Return>", lambda event: sendCommand())
 
 # =================== Start WebSocket Server ===================
 if ENABLE_MAP:
     # Create a thread for the WebSocket server
-    def run_websocket_server():
+    def runWebSocketServer():
         global websocket_loop
-        websocket_loop = start_websocket_server(WEBSOCKET_PORT)
+        websocket_loop = startWebsocketServer(WEBSOCKET_PORT)
         websocket_loop.run_forever()
 
-    websocket_thread = threading.Thread(target=run_websocket_server, daemon=True)
+    websocket_thread = threading.Thread(target=runWebSocketServer, daemon=True)
     websocket_thread.start()
 
 # =================== Application Main Loop ===================
-def on_closing():
+def onClosing():
     if SAVE_TO_FILE and 'csv_file' in globals():
         print("Closing CSV file...")
         csv_file.close()
@@ -349,8 +355,8 @@ def on_closing():
     # Clean up embedded map window if it exists
     try:
         # Import here to avoid circular imports
-        from embedded_map import close_all_map_windows
-        close_all_map_windows()
+        from embedded_map import closeAllMapWindows
+        closeAllMapWindows()
     except Exception as e:
         print(f"Error closing map windows: {e}")
     
@@ -367,15 +373,15 @@ def on_closing():
     os._exit(0)
 
 # Handle keyboard interrupts
-def handle_interrupt(sig, frame):
+def handleInterrupt(sig, frame):
     print("\nProgram interrupted by user. Cleaning up...")
-    on_closing()
+    onClosing()
     sys.exit(0)
 
 # Register signal handlers for clean exit
-signal.signal(signal.SIGINT, handle_interrupt)
-root.protocol("WM_DELETE_WINDOW", on_closing)
-update_gui()
+signal.signal(signal.SIGINT, handleInterrupt)
+root.protocol("WM_DELETE_WINDOW", onClosing)
+updateGui()
 root.mainloop()
 
 if SAVE_TO_FILE and 'csv_file' in globals():

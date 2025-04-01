@@ -24,7 +24,7 @@ latest_telemetry = {}
 embedded_map_window = None
 
 # =================== WebSocket Server Functions ===================
-async def websocket_handler(websocket, path):
+async def websocketHandler(websocket, path):
     """Handle WebSocket connections and broadcast telemetry data."""
     # Register new client
     clients.add(websocket)
@@ -43,7 +43,7 @@ async def websocket_handler(websocket, path):
         # Unregister client on disconnection
         clients.remove(websocket)
 
-async def broadcast_telemetry(data):
+async def broadcastTelemetry(data):
     """Send telemetry data to all connected WebSocket clients."""
     global latest_telemetry
     latest_telemetry = data
@@ -60,18 +60,18 @@ async def broadcast_telemetry(data):
         for client in disconnected_clients:
             clients.remove(client)
 
-def start_websocket_server(port):
+def startWebsocketServer(port):
     """Start the WebSocket server in a background thread."""
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     start_server = websockets.serve(
-        websocket_handler, "localhost", port
+        websocketHandler, "localhost", port
     )
     loop.run_until_complete(start_server)
     print(f"WebSocket server started on ws://localhost:{port}")
     return loop
 
-def launch_map_visualization(base_dir, parent=None, embedded=True):
+def launchMapVisualization(base_dir, parent=None, embedded=True):
     """Open the map visualization in the default web browser or embedded window.
     
     Args:
@@ -84,8 +84,8 @@ def launch_map_visualization(base_dir, parent=None, embedded=True):
     if embedded and parent:
         try:
             # Import in function to avoid circular imports
-            from embedded_map import create_embedded_map
-            embedded_map_window = create_embedded_map(parent, base_dir)
+            from embedded_map import createEmbeddedMap
+            embedded_map_window = createEmbeddedMap(parent, base_dir)
             print("Opening embedded map visualization")
             return embedded_map_window
         except ImportError:
@@ -98,7 +98,7 @@ def launch_map_visualization(base_dir, parent=None, embedded=True):
         print(f"Opening map visualization in browser: {map_path}")
 
 # =================== Helper Functions ===================
-def haversine_distance(lat1, lon1, lat2, lon2):
+def haversineDistance(lat1, lon1, lat2, lon2):
     """Calculate the great-circle distance between two points on Earth."""
     # Earth's radius in meters
     R_earth = 6371000
@@ -135,7 +135,7 @@ class TestSerial:
         if current_time - self.last_data_time >= 0.5:  # Simulate ~2Hz telemetry
             self.last_data_time = current_time
             self.in_waiting = True
-            return self._generate_test_telemetry()
+            return self._generateTestTelemetry()
         # No data ready yet
         self.in_waiting = False
         return b""
@@ -150,7 +150,7 @@ class TestSerial:
             print("Test mode: Command received successfully")
         return len(data)
 
-    def _generate_test_telemetry(self):
+    def _generateTestTelemetry(self):
         """Generate simulated telemetry data for test mode."""
         # Create simulated data with some variance to look realistic
         timestamp = time.time()
@@ -205,13 +205,13 @@ class PlotWindow:
         self.y_max_val = tk.DoubleVar()
         
         # Setup the UI components
-        self._setup_controls()
-        self._setup_plot_area()
+        self._setupControls()
+        self._setupPlotArea()
         
         # Store window info and setup close handler
         self.window_info = {
             "window": self.new_window,
-            "update_func": self.update_plot,
+            "update_func": self.updatePlot,
             "field_var": self.field_var,
             "fixed_y_var": self.fixed_y_var,
             "y_min_val": self.y_min_val,
@@ -223,9 +223,9 @@ class PlotWindow:
             self.plot_windows_list.append(self.window_info)
         
         # Handle window close event
-        self.new_window.protocol("WM_DELETE_WINDOW", self._on_close)
+        self.new_window.protocol("WM_DELETE_WINDOW", self._onClose)
     
-    def _setup_controls(self):
+    def _setupControls(self):
         """Set up the control elements for the plot window"""
         # Create frame for controls (dropdown and + button)
         control_frame = tk.Frame(self.new_window)
@@ -240,7 +240,7 @@ class PlotWindow:
         
         # Add (+) button for creating new plot windows
         add_button = tk.Button(control_frame, text="+", font=("Arial", 12, "bold"), 
-                              command=self.create_new_plot_window, width=3)
+                              command=self.createNewPlotWindow, width=3)
         add_button.pack(side="right", padx=10)
         
         # Create a second control frame for y-axis limit controls
@@ -249,14 +249,14 @@ class PlotWindow:
         
         # Add checkbox for fixed y-axis limits
         fixed_y_check = tk.Checkbutton(y_control_frame, text="Fixed Y-Axis Limits", 
-                                      variable=self.fixed_y_var, command=self._on_fixed_y_changed,
+                                      variable=self.fixed_y_var, command=self._onFixedYChanged,
                                       font=("Arial", 10))
         fixed_y_check.pack(side="left", padx=5)
         
         # Bind dropdown selection change event
-        field_dropdown.bind("<<ComboboxSelected>>", self._on_field_change)
+        field_dropdown.bind("<<ComboboxSelected>>", self._onFieldChange)
     
-    def _setup_plot_area(self):
+    def _setupPlotArea(self):
         """Set up the matplotlib plot area"""
         # Create matplotlib figure for plotting
         self.fig = Figure(figsize=(8, 6), dpi=75)
@@ -269,7 +269,7 @@ class PlotWindow:
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.new_window)
         self.canvas.get_tk_widget().pack(fill="both", expand=True, padx=10, pady=10)
     
-    def update_plot(self):
+    def updatePlot(self):
         """Update the plot with current data"""
         field = self.field_var.get()
         if field and field in self.plot_data and self.plot_data[field]['x']:
@@ -293,36 +293,36 @@ class PlotWindow:
         
         self.canvas.draw()
     
-    def _on_field_change(self, event):
+    def _onFieldChange(self, event):
         """Handle field change in dropdown menu"""
         if self.fixed_y_var.get():
             # Ask if user wants to set new limits for the new field
-            set_y_limits_dialog(self.new_window, self.field_var.get(), self.y_min_val, self.y_max_val)
-        self.update_plot()
+            setYLimitsDialog(self.new_window, self.field_var.get(), self.y_min_val, self.y_max_val)
+        self.updatePlot()
     
-    def _on_fixed_y_changed(self):
+    def _onFixedYChanged(self):
         """Handle change in fixed y-axis checkbox"""
         if self.fixed_y_var.get():
             # Show dialog for entering y-axis limits
-            set_y_limits_dialog(self.new_window, self.field_var.get(), self.y_min_val, self.y_max_val)
+            setYLimitsDialog(self.new_window, self.field_var.get(), self.y_min_val, self.y_max_val)
         else:
             # Reset to auto-scaling
             self.y_min_val.set(0)
             self.y_max_val.set(0)
-            self.update_plot()
+            self.updatePlot()
     
-    def _on_close(self):
+    def _onClose(self):
         """Handle window close event"""
         if self.plot_windows_list is not None and self.window_info in self.plot_windows_list:
             self.plot_windows_list.remove(self.window_info)
         self.new_window.destroy()
     
-    def create_new_plot_window(self):
+    def createNewPlotWindow(self):
         """Create a new plot window"""
         return PlotWindow(self.parent, self.plot_data, self.plotable_fields, 
                          self.plot_window_size, self.plot_counter, self.plot_windows_list)
 
-def set_y_limits_dialog(parent, field_name, y_min_var, y_max_var):
+def setYLimitsDialog(parent, field_name, y_min_var, y_max_var):
     """Creates a dialog for setting y-axis limits"""
     dialog = tk.Toplevel(parent)
     dialog.title(f"Set Y-Axis Limits for {field_name}")
@@ -352,7 +352,7 @@ def set_y_limits_dialog(parent, field_name, y_min_var, y_max_var):
     if current_max != "":
         max_entry.insert(0, str(current_max))
     
-    def on_ok():
+    def onOk():
         # Validate input
         try:
             min_val = float(min_entry.get())
@@ -369,7 +369,7 @@ def set_y_limits_dialog(parent, field_name, y_min_var, y_max_var):
         except ValueError:
             tk.messagebox.showerror("Invalid Input", "Please enter valid numeric values")
     
-    def on_cancel():
+    def onCancel():
         # Reset checkbox and destroy dialog
         for window_info in parent.winfo_children():
             if hasattr(window_info, 'fixed_y_var') and window_info.fixed_y_var == y_min_var:
@@ -380,8 +380,8 @@ def set_y_limits_dialog(parent, field_name, y_min_var, y_max_var):
     button_frame = tk.Frame(dialog)
     button_frame.pack(pady=10)
     
-    tk.Button(button_frame, text="OK", command=on_ok, width=10).grid(row=0, column=0, padx=5)
-    tk.Button(button_frame, text="Cancel", command=on_cancel, width=10).grid(row=0, column=1, padx=5)
+    tk.Button(button_frame, text="OK", command=onOk, width=10).grid(row=0, column=0, padx=5)
+    tk.Button(button_frame, text="Cancel", command=onCancel, width=10).grid(row=0, column=1, padx=5)
     
     # Center the dialog relative to parent
     dialog.update_idletasks()
@@ -395,7 +395,7 @@ def set_y_limits_dialog(parent, field_name, y_min_var, y_max_var):
     dialog.focus_set()
     dialog.wait_window()
 
-def update_all_plots(plot_windows):
+def updateAllPlots(plot_windows):
     """Updates all plot windows with latest data"""
     for window_info in plot_windows:
         try:
@@ -403,3 +403,13 @@ def update_all_plots(plot_windows):
                 window_info["update_func"]()
         except Exception as e:
             print(f"Error updating plot: {e}")
+
+
+# =================== COM Port Functions ===================
+def printAvailableCOMPorts():
+    """Print available COM ports"""
+    import serial.tools.list_ports
+    ports = serial.tools.list_ports.comports()
+    print("Available COM ports:")
+    for port in ports:
+        print(f"{port.device}: {port.description}")

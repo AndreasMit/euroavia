@@ -8,7 +8,7 @@ import subprocess
 # Store active map viewer process
 _map_process = None
 
-def create_embedded_map(parent, base_dir):
+def createEmbeddedMap(parent, base_dir):
     """Create and return an embedded map window
     
     Args:
@@ -31,7 +31,7 @@ def create_embedded_map(parent, base_dir):
         # Ensure viewer script exists
         viewer_path = os.path.join(base_dir, "map_viewer.py")
         if not os.path.exists(viewer_path):
-            _create_viewer_script(viewer_path)
+            createViewerScript(viewer_path)
         
         # Launch directly without intermediate window
         _map_process = subprocess.Popen([sys.executable, viewer_path, map_path])
@@ -43,7 +43,7 @@ def create_embedded_map(parent, base_dir):
         webbrowser.open('file://' + os.path.abspath(map_path))
         print("Opened map in browser as fallback")
 
-def _create_viewer_script(script_path):
+def createViewerScript(script_path):
     """Create a standalone map viewer script that can be run in a separate process"""
     with open(script_path, 'w') as f:
         f.write("""
@@ -75,7 +75,7 @@ if __name__ == '__main__':
     webview.start()
 """)
 
-def close_all_map_windows():
+def closeAllMapWindows():
     """Close all open map windows"""
     global _map_process
     
