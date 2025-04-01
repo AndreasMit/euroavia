@@ -20,6 +20,8 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 clients = set()
 # Latest telemetry data to send to new clients
 latest_telemetry = {}
+# Global reference to the embedded map window if active
+embedded_map_window = None
 
 # =================== WebSocket Server Functions ===================
 async def websocket_handler(websocket, path):
@@ -69,11 +71,31 @@ def start_websocket_server(port):
     print(f"WebSocket server started on ws://localhost:{port}")
     return loop
 
-def launch_map_visualization(base_dir):
-    """Open the map visualization in the default web browser."""
-    map_path = os.path.join(base_dir, "map_visualiser.html")
-    webbrowser.open('file://' + map_path)
-    print(f"Opening map visualization: {map_path}")
+def launch_map_visualization(base_dir, parent=None, embedded=True):
+    """Open the map visualization in the default web browser or embedded window.
+    
+    Args:
+        base_dir: Base directory where the HTML file is located
+        parent: Parent tkinter window (needed for embedded mode)
+        embedded: Whether to use embedded mode (tkinter window) or browser
+    """
+    global embedded_map_window
+    
+    if embedded and parent:
+        try:
+            # Import in function to avoid circular imports
+            from embedded_map import create_embedded_map
+            embedded_map_window = create_embedded_map(parent, base_dir)
+            print("Opening embedded map visualization")
+            return embedded_map_window
+        except ImportError:
+            print("Embedded map module not available, falling back to browser")
+            embedded = False
+    
+    if not embedded:
+        map_path = os.path.join(base_dir, "map_visualiser.html")
+        webbrowser.open('file://' + os.path.abspath(map_path))
+        print(f"Opening map visualization in browser: {map_path}")
 
 # =================== Helper Functions ===================
 def haversine_distance(lat1, lon1, lat2, lon2):

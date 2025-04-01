@@ -14,8 +14,9 @@ BAUD_RATE = 9600              # Baud rate for serial communication
 GUI_REFRESH_RATE = 100        # GUI update interval in milliseconds
 SAVE_TO_FILE = False          # Set to True to enable CSV logging
 WEBSOCKET_PORT = 8765         # Port for WebSocket server
-ENABLE_MAP = True             # Enable map visualization
 PLOT_WINDOW_SIZE = 10         # Number of measurements to display in the plot
+ENABLE_MAP = True             # Enable map visualization
+EMBEDDED_MAP = True           # Use embedded map in tkinter window instead of browser
 
 # ----- Command Sender Configuration (customizable) -----
 COMMAND_SEND_DELAY = 0.5      # Delay in seconds between command sends
@@ -107,8 +108,26 @@ def update_led_status():
 
 # Add map visualization button
 if ENABLE_MAP:
+    def open_map():
+        try:
+            # Try to use the embedded map if available
+            if EMBEDDED_MAP:
+                try:
+                    from embedded_map import create_embedded_map
+                    create_embedded_map(root, os.path.dirname(os.path.abspath(__file__)))
+                    return
+                except ImportError:
+                    print("Embedded map module not available, falling back to browser")
+            
+            # Fallback to browser
+            map_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "map_visualiser.html")
+            webbrowser.open('file://' + os.path.abspath(map_path))
+            print(f"Opening map visualization in browser: {map_path}")
+        except Exception as e:
+            print(f"Error opening map visualization: {e}")
+    
     map_button = tk.Button(root, text="Open Map Visualization", font=("Arial", 12), 
-                          command=lambda: launch_map_visualization(os.path.dirname(os.path.abspath(__file__))))
+                          command=open_map)
     map_button.grid(row=len(labels_text), column=0, columnspan=2, padx=5, pady=10)
 
 # =================== Telemetry Plot Window Creation ===================
@@ -323,11 +342,29 @@ def on_closing():
         csv_file.close()
     
     # Close all plot windows
-    for window_info in list(plot_windows):  # Use a copy of the list since we'll modify it
+    for window_info in list(plot_windows):
         if window_info["window"].winfo_exists():
             window_info["window"].destroy()
+    
+    # Clean up embedded map window if it exists
+    try:
+        # Import here to avoid circular imports
+        from embedded_map import close_all_map_windows
+        close_all_map_windows()
+    except Exception as e:
+        print(f"Error closing map windows: {e}")
+    
+    # Final cleanup
+    if websocket_loop:
+        try:
+            websocket_loop.stop()
+        except:
+            pass
             
     root.destroy()
+    
+    # Make sure to terminate any Python processes that might be hanging
+    os._exit(0)
 
 # Handle keyboard interrupts
 def handle_interrupt(sig, frame):
