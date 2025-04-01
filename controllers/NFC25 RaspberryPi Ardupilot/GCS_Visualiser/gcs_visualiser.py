@@ -47,6 +47,10 @@ last_test_data_time = time.time()  # Track time of last test data generation
 test_cmd_received = "0"           # Command received flag for test mode
 test_cmd_received_time = 0        # Time when command was last received
 
+# ----- Connection Status Configuration -----
+TELEMETRY_TIMEOUT = 2    # Number of seconds before considering telemetry stale
+last_telemetry_time = 0  # Track time of last received telemetry
+
 # =================== WebSocket Server ===================
 # Global list of connected WebSocket clients
 clients = set()
@@ -229,15 +233,45 @@ root.title("GCS Telemetry Visualiser")
 root.attributes("-topmost", True)  # Ensure main window stays on top
 
 # -------------------- GUI Labels Setup --------------------
-# Update labels to include Ground Distance
+# Update labels to include Ground Distance and Connected Status
 labels_text = ["Timestamp", "Latency (ms)", "Freq (Hz)", "Angle of Attack", "Altitude", 
                "G-Force", "Battery Voltage", "Battery Current", "Latitude", "Longitude", 
-               "Speed", "Ground Distance", "Cmd Received"]
+               "Speed", "Ground Distance", "Cmd Received", "Connected"]
 labels = {}
-for i, text in enumerate(labels_text):
+
+# Create and place all labels except "Connected"
+for i, text in enumerate(labels_text[:-1]):  # Process all labels except the last one (Connected)
     tk.Label(root, text=text+":", font=("Arial", 12)).grid(row=i, column=0, padx=5, pady=2, sticky="e")
     labels[text] = tk.Label(root, text="N/A", font=("Arial", 12))
     labels[text].grid(row=i, column=1, padx=5, pady=2, sticky="w")
+
+
+# ------- Label for CONNECTED status -------
+# Special handling for "Connected" label with LED indicator
+connected_row = len(labels_text) - 1
+tk.Label(root, text=labels_text[connected_row]+":", font=("Arial", 12)).grid(row=connected_row, column=0, padx=5, pady=2, sticky="e")
+
+# Create a canvas for the LED indicator
+led_size = 15
+# Create a canvas with padding for the border effect
+led_canvas = tk.Canvas(root, width=led_size+8, height=led_size+8, bd=0, highlightthickness=0, bg="white")
+led_canvas.grid(row=connected_row, column=1, padx=5, pady=2, sticky="w")
+# Draw a silver border ring
+led_canvas.create_oval(1, 1, led_size+7, led_size+7, fill="silver", outline="#999999")
+# Draw the actual LED with a slight inset (for 3D effect)
+led = led_canvas.create_oval(4, 4, led_size+4, led_size+4, fill="red", outline="black", width=1)
+# Add a small highlight to create a glass-like effect
+led_canvas.create_arc(6, 6, led_size, led_size, start=40, extent=120, fill="white", outline="")
+
+# Function to update the LED status based on last telemetry time
+def update_led_status():
+    """Update the LED color based on telemetry freshness"""
+    if time.time() - last_telemetry_time < TELEMETRY_TIMEOUT:
+        led_canvas.itemconfig(led, fill="green")
+    else:
+        led_canvas.itemconfig(led, fill="red")
+# ----------------------------------------------
+
 
 # Add a button to open map visualization
 if ENABLE_MAP:
@@ -249,6 +283,10 @@ if ENABLE_MAP:
 def update_gui():
     """Reads telemetry from serial port and updates GUI labels."""
     global prev_msg_timestamp, waiting_for_confirmation, success_time, button_reset_after
+    global last_telemetry_time
+    
+    # Update LED status on each refresh
+    update_led_status()
     
     # Check for button color reset after success
     if button_reset_after is not None and time.time() >= button_reset_after:
@@ -278,6 +316,9 @@ def update_gui():
             # 0: Timestamp, 1: Angle, 2: Altitude, 3: G-Force, 4: Bat Voltage, 5: Bat Current,
             # 6: Latitude, 7: Longitude, 8: Speed, 9: Cmd Received
             if len(parts) == 10:
+                # Update the last telemetry time
+                last_telemetry_time = time.time()  # Simulate some delay for testing
+                
                 current_msg_timestamp = float(parts[0])
                 latency = (time.time() - current_msg_timestamp) * 1000  
                 if prev_msg_timestamp is not None:
@@ -324,7 +365,7 @@ def update_gui():
                 for key, val in data_map.items():
                     labels[key].config(text=val)
                 if SAVE_TO_FILE:
-                    csv_writer.writerow([data_map[key] for key in labels_text])
+                    csv_writer.writerow([data_map[key] for key in labels_text[:-1]])
                     csv_file.flush()
                 
                 # Send data to WebSocket clients if the feature is enabled
