@@ -1,23 +1,12 @@
 # =================== Imports and Parameter Configuration ===================
-import tkinter as tk
-from tkinter import ttk
 import serial
-import time
 import sys
 import signal
 import csv                     # For CSV writing
 from datetime import datetime  # For timestamped filenames
-import asyncio                 # For async WebSocket server
 import threading               # For running WebSocket server in a thread
-import os                      # For file path handling
-import matplotlib.pyplot as plt
-from matplotlib.figure import Figure
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-
 # Import utility functions from gcs_utils
-from gcs_utils import (haversine_distance, TestSerial, start_websocket_server, 
-                      broadcast_telemetry, launch_map_visualization,
-                      PlotWindow, update_all_plots)
+from gcs_utils import *
 
 # -------------------- Configuration Parameters --------------------
 SERIAL_PORT = 'TEST'          # Use 'TEST' for test mode or 'COM12' for real device
