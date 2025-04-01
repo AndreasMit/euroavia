@@ -1,5 +1,6 @@
 # =================== Imports and Parameter Configuration ===================
 import tkinter as tk
+from tkinter import ttk
 import serial
 import time
 import sys
@@ -9,10 +10,14 @@ from datetime import datetime  # For timestamped filenames
 import asyncio                 # For async WebSocket server
 import threading               # For running WebSocket server in a thread
 import os                      # For file path handling
+import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 # Import utility functions from gcs_utils
 from gcs_utils import (haversine_distance, TestSerial, start_websocket_server, 
-                      broadcast_telemetry, launch_map_visualization)
+                      broadcast_telemetry, launch_map_visualization,
+                      PlotWindow, update_all_plots)
 
 # -------------------- Configuration Parameters --------------------
 SERIAL_PORT = 'TEST'          # Use 'TEST' for test mode or 'COM12' for real device
@@ -21,12 +26,13 @@ GUI_REFRESH_RATE = 100        # GUI update interval in milliseconds
 SAVE_TO_FILE = False          # Set to True to enable CSV logging
 WEBSOCKET_PORT = 8765         # Port for WebSocket server
 ENABLE_MAP = True             # Enable map visualization
+PLOT_WINDOW_SIZE = 10         # Number of measurements to display in the plot
 
 # ----- Command Sender Configuration (customizable) -----
 COMMAND_SEND_DELAY = 0.5      # Delay in seconds between command sends
 COMMAND_NUMBER_SEND = 7       # Total number of times to send a command
 START_PATTERN = "/*"          # Command start pattern
-END_PATTERN = "*/"           # Command end pattern
+END_PATTERN = "*/"            # Command end pattern
 
 # ----- Ground Distance Calculation Configuration -----
 lat_home, lon_home = 37.977864, 23.783953  # Home coordinates for distance calculation
@@ -50,6 +56,16 @@ command_sent_time = 0         # Timestamp when the last command was sent
 waiting_for_confirmation = False  # Flag indicating we're waiting for command confirmation
 success_time = 0              # Timestamp when command confirmation was received
 button_reset_after = None     # Time when to reset the send button color to default
+
+# Data structures for telemetry plotting
+plotable_fields = ["Angle of Attack", "Altitude", "G-Force", "Battery Voltage", 
+                   "Battery Current", "Speed", "Ground Distance", "Latency (ms)", "Freq (Hz)"]
+plot_data = {field: {'x': [], 'y': []} for field in plotable_fields}
+current_plot_field = None
+plot_counter = 0
+
+# Keep track of all plot windows
+plot_windows = []
 
 # =================== CSV and Serial Initialization ===================
 if SAVE_TO_FILE:
@@ -106,10 +122,18 @@ if ENABLE_MAP:
                           command=lambda: launch_map_visualization(os.path.dirname(os.path.abspath(__file__))))
     map_button.grid(row=len(labels_text), column=0, columnspan=2, padx=5, pady=10)
 
+# =================== Telemetry Plot Window Creation ===================
+def create_plot_window():
+    """Creates a new telemetry plot window instance"""
+    return PlotWindow(root, plot_data, plotable_fields, PLOT_WINDOW_SIZE, plot_counter, plot_windows)
+
+# Create the first plot window
+create_plot_window()
+
 # =================== GUI Update and Command Functions ===================
 def update_gui():
     global prev_msg_timestamp, waiting_for_confirmation, success_time, button_reset_after
-    global last_telemetry_time
+    global last_telemetry_time, plot_counter
     
     update_led_status()
     
@@ -160,6 +184,45 @@ def update_gui():
                     success_time = time.time()
                     send_button.config(bg=BUTTON_SUCCESS_COLOR)
                     button_reset_after = time.time() + 2
+                
+                # Increment plot counter for x-axis of plots
+                plot_counter += 1
+                
+                # Update data for plotting
+                try:
+                    plot_data["Angle of Attack"]['x'].append(plot_counter)
+                    plot_data["Angle of Attack"]['y'].append(float(parts[1]))
+                    
+                    plot_data["Altitude"]['x'].append(plot_counter)
+                    plot_data["Altitude"]['y'].append(float(parts[2]))
+                    
+                    plot_data["G-Force"]['x'].append(plot_counter)
+                    plot_data["G-Force"]['y'].append(float(parts[3]))
+                    
+                    plot_data["Battery Voltage"]['x'].append(plot_counter)
+                    plot_data["Battery Voltage"]['y'].append(float(parts[4]))
+                    
+                    plot_data["Battery Current"]['x'].append(plot_counter)
+                    plot_data["Battery Current"]['y'].append(float(parts[5]))
+                    
+                    plot_data["Speed"]['x'].append(plot_counter)
+                    plot_data["Speed"]['y'].append(float(parts[8]))
+                    
+                    if ground_distance != "N/A":
+                        plot_data["Ground Distance"]['x'].append(plot_counter)
+                        plot_data["Ground Distance"]['y'].append(float(ground_distance.split()[0]))
+                    
+                    plot_data["Latency (ms)"]['x'].append(plot_counter)
+                    plot_data["Latency (ms)"]['y'].append(latency)
+                    
+                    plot_data["Freq (Hz)"]['x'].append(plot_counter)
+                    plot_data["Freq (Hz)"]['y'].append(freq)
+                    
+                    # Update all plots using the utility function
+                    update_all_plots(plot_windows)
+                    
+                except Exception as e:
+                    print(f"Error updating plot data: {e}")
                 
                 data_map = {
                     "Timestamp": parts[0],
@@ -269,6 +332,12 @@ def on_closing():
     if SAVE_TO_FILE and 'csv_file' in globals():
         print("Closing CSV file...")
         csv_file.close()
+    
+    # Close all plot windows
+    for window_info in list(plot_windows):  # Use a copy of the list since we'll modify it
+        if window_info["window"].winfo_exists():
+            window_info["window"].destroy()
+            
     root.destroy()
 
 # Handle keyboard interrupts
