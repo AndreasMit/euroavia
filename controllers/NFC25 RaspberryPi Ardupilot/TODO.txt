@@ -3,13 +3,66 @@ TODO:
     - Implement LoRa command processing
     - Choose correct telemetry payload
 
+    GCS
+        - Checksum
+        - Preset of commands to send
+        - Command history viewer
+        - Command validation before sending?
+        - Multiparameter plots
+        - Commands
+            Waypoint management
+                Creation, editing, uploading
+        - Visualise flight path on map with editable waypoints
+        - Mission planning with altitude and speed constraints
+        - Alert System
+            Configurable for critical parameters
+            Visual and audible warnings
+            Log for alert events
+        - Data Recording and Replay
+            Export in various formats? KML for Google Earth?
+        - Signal Strength Indicator?
+            Communication Statistics Panel (Packets sent/received/lost)
+        
+        Competition Specific
+            - Competition Timer
+            - Task Checklist
+                Preflight - Inflight - Postflight
+                Autoverification of completed tasks where possible
+            - Real time scoring based on competition metrics
+            - Efficiency calculations
+            - Perforance comparisons with previous flights
+
+        Architecture Improvements
+            - Modular Architecture - Components
+            - Multi Aircraft Support
+            - Profiles for different competition scenarios
+            - Persistence for settings between sessions
+            - Flight Log Notes for post analysis
+
+            - Emergency Protocols
+
+
 Recently Done:
     main_rasp_code.py
         - Implement bidirectional communication
         - Added RC channel Support
+        - Implemented telemetry pause during command reception
+        - Added command buffer with timeout for fragmented messages
+        - Configured MAVLink message streams with appropriate frequencies
+        
     GCS
         - Implement bidirectional communication
-
+        - Map Visualisation
+        - Implemented command confirmation feedback with visual indicators
+        - Added real-time plotting windows with configurable Y-axis limits
+        - LED connection status indicator based on telemetry age
+        - Test mode with simulated telemetry and flight path
+        - Ground distance calculation with Haversine formula
+        - Command sender
+        - Automatic COM port detection
+        - Refactored to use modular architecture with separate utility files
+        - Standardized code style with CamelCase function names
 
     Auxiliary Material
         Time sync rasp pi time with WIN10 over NTP server
+        Implemented modular architecture with separate utility functions
