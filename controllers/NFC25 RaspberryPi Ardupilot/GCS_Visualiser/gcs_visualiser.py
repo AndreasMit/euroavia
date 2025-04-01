@@ -6,18 +6,16 @@ import sys
 import signal
 import csv                     # For CSV writing
 from datetime import datetime  # For timestamped filenames
-import math                    # For distance calculation
-import random                  # For test mode data generation
-import json                    # For JSON formatting
 import asyncio                 # For async WebSocket server
-import websockets               # For WebSocket functionality
 import threading               # For running WebSocket server in a thread
-import webbrowser              # For opening the HTML map visualization
 import os                      # For file path handling
 
+# Import utility functions from gcs_utils
+from gcs_utils import (haversine_distance, TestSerial, start_websocket_server, 
+                      broadcast_telemetry, launch_map_visualization)
+
 # -------------------- Configuration Parameters --------------------
-# SERIAL_PORT = 'COM12'         # Serial port to connect to the GCS device
-SERIAL_PORT = 'TEST'          # Uncomment to activate test mode
+SERIAL_PORT = 'TEST'          # Use 'TEST' for test mode or 'COM12' for real device
 BAUD_RATE = 9600              # Baud rate for serial communication
 GUI_REFRESH_RATE = 100        # GUI update interval in milliseconds
 SAVE_TO_FILE = False          # Set to True to enable CSV logging
@@ -27,273 +25,98 @@ ENABLE_MAP = True             # Enable map visualization
 # ----- Command Sender Configuration (customizable) -----
 COMMAND_SEND_DELAY = 0.5      # Delay in seconds between command sends
 COMMAND_NUMBER_SEND = 7       # Total number of times to send a command
-
-# ----- Pattern Definitions for Commands -----
-START_PATTERN = "/*"
-END_PATTERN = "*/"
+START_PATTERN = "/*"          # Command start pattern
+END_PATTERN = "*/"           # Command end pattern
 
 # ----- Ground Distance Calculation Configuration -----
 lat_home, lon_home = 37.977864, 23.783953  # Home coordinates for distance calculation
 
 # ----- Button Colors -----
-BUTTON_DEFAULT_COLOR = "SystemButtonFace"  # Default button color
-BUTTON_WAITING_COLOR = "yellow"            # When command is sent but not confirmed
-BUTTON_SUCCESS_COLOR = "green"             # When command is confirmed (received flag = 1)
-BUTTON_FAILED_COLOR = "red"                # When command times out without confirmation
+BUTTON_DEFAULT_COLOR = "SystemButtonFace"
+BUTTON_WAITING_COLOR = "yellow"
+BUTTON_SUCCESS_COLOR = "green"
+BUTTON_FAILED_COLOR = "red"
 
-# ----- Test Mode Configuration -----
-TEST_MODE = SERIAL_PORT == 'TEST'  # Flag to determine if we're in test mode
-last_test_data_time = time.time()  # Track time of last test data generation
-test_cmd_received = "0"           # Command received flag for test mode
-test_cmd_received_time = 0        # Time when command was last received
+# ----- Test Mode and Connection Status Configuration -----
+TEST_MODE = SERIAL_PORT == 'TEST'
+TELEMETRY_TIMEOUT = 2
+last_telemetry_time = 0
 
-# ----- Connection Status Configuration -----
-TELEMETRY_TIMEOUT = 2    # Number of seconds before considering telemetry stale
-last_telemetry_time = 0  # Track time of last received telemetry
-
-# =================== WebSocket Server ===================
-# Global list of connected WebSocket clients
-clients = set()
-# Latest telemetry data to send to new clients
-latest_telemetry = {}
-
-# WebSocket server handler
-async def websocket_handler(websocket, path):
-    """Handle WebSocket connections and broadcast telemetry data."""
-    # Register new client
-    clients.add(websocket)
-    try:
-        # Send latest telemetry data to the new client
-        if latest_telemetry:
-            await websocket.send(json.dumps(latest_telemetry))
-        
-        # Keep connection alive and handle client messages if needed
-        async for message in websocket:
-            # Process client messages if needed
-            pass
-    except websockets.exceptions.ConnectionClosed:
-        pass
-    finally:
-        # Unregister client on disconnection
-        clients.remove(websocket)
-
-# Function to broadcast telemetry data to all connected clients
-async def broadcast_telemetry(data):
-    """Send telemetry data to all connected WebSocket clients."""
-    global latest_telemetry
-    latest_telemetry = data
-    if clients:  # Check if there are any connected clients
-        # Create message tasks for each client
-        disconnected_clients = set()
-        for client in clients:
-            try:
-                await client.send(json.dumps(data))
-            except websockets.exceptions.ConnectionClosed:
-                disconnected_clients.add(client)
-        
-        # Remove disconnected clients
-        for client in disconnected_clients:
-            clients.remove(client)
-
-# Function to start the WebSocket server in a separate thread
-def start_websocket_server():
-    """Start the WebSocket server in a background thread."""
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    start_server = websockets.serve(
-        websocket_handler, "localhost", WEBSOCKET_PORT
-    )
-    loop.run_until_complete(start_server)
-    loop.run_forever()
-
-# =================== Helper Functions ===================
-def haversine_distance(lat1, lon1, lat2, lon2):
-    """Calculate the great-circle distance between two points on Earth."""
-    # Earth's radius in meters
-    R_earth = 6371000
-    
-    # Convert latitudes and longitudes from degrees to radians
-    lat1, lon1, lat2, lon2 = map(math.radians, [lat1, lon1, lat2, lon2])
-    
-    # Differences in coordinates
-    dlat = lat2 - lat1
-    dlon = lon2 - lon1
-    
-    # Haversine formula components
-    a = math.sin(dlat / 2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon / 2)**2
-    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
-    
-    # Distance between the two points in meters
-    distance = R_earth * c
-    return distance
-
-# =================== Test Mode Functions ===================
-def generate_test_telemetry():
-    """Generate simulated telemetry data for test mode."""
-    global test_cmd_received, last_test_data_time, test_cmd_received_time
-    
-    # Create simulated data with some variance to look realistic
-    timestamp = time.time()
-    angle = round(random.uniform(0, 15), 1)
-    altitude = round(random.uniform(100, 500), 1)
-    g_force = round(random.uniform(0.9, 1.2), 2)
-    voltage = round(random.uniform(11.1, 12.6), 2)
-    current = round(random.uniform(0.5, 2.0), 2)
-    
-    # Simulated flight path - circular pattern around home coordinates
-    t = (time.time() % 60) / 60 * 2 * math.pi  # Complete circle every 60 seconds
-    radius = 0.001  # Roughly 100m at equator
-    lat = lat_home + radius * math.sin(t)
-    lon = lon_home + radius * math.cos(t)
-    
-    speed = round(random.uniform(5, 15), 1)
-    
-    # Keep command received flag as "1" for 3 seconds after receiving a command, with 70% probability
-    if test_cmd_received == "1":
-        if time.time() - test_cmd_received_time > 3 or random.random() > 0.7:
-            test_cmd_received = "0"
-            print("Test mode: Command received flag reset")
-    
-    last_test_data_time = time.time()
-    
-    # Format as CSV string similar to what would come from serial
-    telemetry_str = f"{timestamp:.2f},{angle},{altitude},{g_force},{voltage},{current},{lat:.6f},{lon:.6f},{speed},{test_cmd_received}"
-    return telemetry_str.encode('utf-8')
-
-class TestSerial:
-    """Mock Serial class for test mode."""
-    def __init__(self):
-        self.in_waiting = True
-        self.last_data_time = time.time() - 0.5  # Initialize to generate data immediately
-    
-    def readline(self):
-        """Simulate reading a line from serial port."""
-        # Generate new data approximately at the rate we would receive it
-        current_time = time.time()
-        if current_time - self.last_data_time >= 0.5:  # Simulate ~2Hz telemetry
-            self.last_data_time = current_time
-            self.in_waiting = True
-            return generate_test_telemetry()
-        # No data ready yet
-        self.in_waiting = False
-        return b""
-    
-    def write(self, data):
-        """Simulate writing to serial port."""
-        global test_cmd_received, test_cmd_received_time
-        print(f"Test mode: Command sent: {data.decode('utf-8').strip()}")
-        # 70% chance of successful command reception for testing both success and failure cases
-        if random.random() < 0.7:
-            test_cmd_received = "1"
-            test_cmd_received_time = time.time()  # Record when command was received
-            print("Test mode: Command received successfully")
-        return len(data)
-
-# Initialize the WebSocket event loop that we'll use for broadcasting
-websocket_loop = None
-
-def launch_map_visualization():
-    """Open the map visualization in the default web browser."""
-    map_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "map_visualiser.html")
-    webbrowser.open('file://' + map_path)
-    print(f"Opening map visualization: {map_path}")
+# Global variables
+websocket_loop = None         # Stores the asyncio event loop for WebSocket communications
+telemetry_paused = False      # Flag to pause telemetry processing during command sending
+prev_msg_timestamp = None     # Stores previous message timestamp for frequency calculation
+command_sent_time = 0         # Timestamp when the last command was sent
+waiting_for_confirmation = False  # Flag indicating we're waiting for command confirmation
+success_time = 0              # Timestamp when command confirmation was received
+button_reset_after = None     # Time when to reset the send button color to default
 
 # =================== CSV and Serial Initialization ===================
-# Initialize CSV file for logging if enabled
 if SAVE_TO_FILE:
     start_time = datetime.now()
     filename = "GCS_Visualiser/Incoming_Telemetry_CSV/" + start_time.strftime("%Y%m%d_%H%M%S") + ".csv"
     csv_file = open(filename, "w", newline="")
     csv_writer = csv.writer(csv_file)
-    # Write header row to CSV
     csv_writer.writerow(["Timestamp", "Latency (ms)", "Freq (Hz)", "Angle of Attack", "Altitude", 
-                           "G-Force", "Battery Voltage", "Battery Current", "Latitude", "Longitude", "Speed", "Cmd Received"])
+                          "G-Force", "Battery Voltage", "Battery Current", "Latitude", "Longitude", "Speed", "Cmd Received"])
 
-# Initialize serial connection to read telemetry data
+# Initialize serial connection
 if TEST_MODE:
     print("\n\nRUNNING IN TEST MODE - Simulating telemetry data")
-    ser = TestSerial()
+    ser = TestSerial(home_coords=(lat_home, lon_home))
 else:
     ser = serial.Serial(SERIAL_PORT, BAUD_RATE, timeout=1)
 
-# Global flags and variables for telemetry handling
-telemetry_paused = False  # Pauses telemetry reading during command send
-prev_msg_timestamp = None
-
-# Global variables for command status tracking
-command_sent_time = 0
-waiting_for_confirmation = False
-success_time = 0
-button_reset_after = None
-
 # =================== Main Window Creation ===================
-# Create and configure the main telemetry display window
 root = tk.Tk()
 root.title("GCS Telemetry Visualiser")
-root.attributes("-topmost", True)  # Ensure main window stays on top
+root.attributes("-topmost", True)
 
 # -------------------- GUI Labels Setup --------------------
-# Update labels to include Ground Distance and Connected Status
 labels_text = ["Timestamp", "Latency (ms)", "Freq (Hz)", "Angle of Attack", "Altitude", 
                "G-Force", "Battery Voltage", "Battery Current", "Latitude", "Longitude", 
                "Speed", "Ground Distance", "Cmd Received", "Connected"]
 labels = {}
 
-# Create and place all labels except "Connected"
-for i, text in enumerate(labels_text[:-1]):  # Process all labels except the last one (Connected)
+# Create and place labels
+for i, text in enumerate(labels_text[:-1]):
     tk.Label(root, text=text+":", font=("Arial", 12)).grid(row=i, column=0, padx=5, pady=2, sticky="e")
     labels[text] = tk.Label(root, text="N/A", font=("Arial", 12))
     labels[text].grid(row=i, column=1, padx=5, pady=2, sticky="w")
 
-
-# ------- Label for CONNECTED status -------
-# Special handling for "Connected" label with LED indicator
+# Create LED indicator for connection status
 connected_row = len(labels_text) - 1
 tk.Label(root, text=labels_text[connected_row]+":", font=("Arial", 12)).grid(row=connected_row, column=0, padx=5, pady=2, sticky="e")
-
-# Create a canvas for the LED indicator
 led_size = 15
-# Create a canvas with padding for the border effect
 led_canvas = tk.Canvas(root, width=led_size+8, height=led_size+8, bd=0, highlightthickness=0, bg="white")
 led_canvas.grid(row=connected_row, column=1, padx=5, pady=2, sticky="w")
-# Draw a silver border ring
 led_canvas.create_oval(1, 1, led_size+7, led_size+7, fill="silver", outline="#999999")
-# Draw the actual LED with a slight inset (for 3D effect)
 led = led_canvas.create_oval(4, 4, led_size+4, led_size+4, fill="red", outline="black", width=1)
-# Add a small highlight to create a glass-like effect
 led_canvas.create_arc(6, 6, led_size, led_size, start=40, extent=120, fill="white", outline="")
 
-# Function to update the LED status based on last telemetry time
 def update_led_status():
-    """Update the LED color based on telemetry freshness"""
     if time.time() - last_telemetry_time < TELEMETRY_TIMEOUT:
         led_canvas.itemconfig(led, fill="green")
     else:
         led_canvas.itemconfig(led, fill="red")
-# ----------------------------------------------
 
-
-# Add a button to open map visualization
+# Add map visualization button
 if ENABLE_MAP:
     map_button = tk.Button(root, text="Open Map Visualization", font=("Arial", 12), 
-                          command=launch_map_visualization)
+                          command=lambda: launch_map_visualization(os.path.dirname(os.path.abspath(__file__))))
     map_button.grid(row=len(labels_text), column=0, columnspan=2, padx=5, pady=10)
 
-# =================== Telemetry Update Function ===================
+# =================== GUI Update and Command Functions ===================
 def update_gui():
-    """Reads telemetry from serial port and updates GUI labels."""
     global prev_msg_timestamp, waiting_for_confirmation, success_time, button_reset_after
     global last_telemetry_time
     
-    # Update LED status on each refresh
     update_led_status()
     
-    # Check for button color reset after success
     if button_reset_after is not None and time.time() >= button_reset_after:
         send_button.config(bg=BUTTON_DEFAULT_COLOR)
         button_reset_after = None
     
-    # Check for command timeout (5 seconds without confirmation)
     if waiting_for_confirmation and time.time() - command_sent_time > 5:
         send_button.config(bg=BUTTON_FAILED_COLOR)
         waiting_for_confirmation = False
@@ -302,22 +125,16 @@ def update_gui():
         root.after(GUI_REFRESH_RATE, update_gui)
         return
     try:
-        # In test mode, we always check for data since TestSerial.in_waiting is managed differently
         if TEST_MODE or ser.in_waiting:
             raw_line = ser.readline()
-            # Skip empty lines (happens in test mode when no new data is ready)
             if not raw_line:
                 root.after(GUI_REFRESH_RATE, update_gui)
                 return
                 
             line = raw_line.decode('utf-8', errors='replace').strip()
             parts = line.split(',')
-            # Expecting 10 fields:
-            # 0: Timestamp, 1: Angle, 2: Altitude, 3: G-Force, 4: Bat Voltage, 5: Bat Current,
-            # 6: Latitude, 7: Longitude, 8: Speed, 9: Cmd Received
             if len(parts) == 10:
-                # Update the last telemetry time
-                last_telemetry_time = time.time()  # Simulate some delay for testing
+                last_telemetry_time = time.time()
                 
                 current_msg_timestamp = float(parts[0])
                 latency = (time.time() - current_msg_timestamp) * 1000  
@@ -328,24 +145,21 @@ def update_gui():
                     freq = 0
                 prev_msg_timestamp = current_msg_timestamp
                 
-                # Calculate ground distance if we have valid coordinates
                 ground_distance = "N/A"
                 try:
                     lat = float(parts[6])
                     lon = float(parts[7])
-                    if lat != 0 and lon != 0:  # Make sure we have real coordinates
+                    if lat != 0 and lon != 0:
                         distance = haversine_distance(lat_home, lon_home, lat, lon)
                         ground_distance = f"{distance:.1f} m"
                 except (ValueError, IndexError):
                     print(f"Error calculating distance: {parts[6]}, {parts[7]} \t Error: {ValueError} - {IndexError}")
                 
-                # Process command received flag - fixing the issue where test_cmd_received never shows as "1" in the UI
                 if waiting_for_confirmation and parts[9] == "1":
-                    # Command was received successfully
                     waiting_for_confirmation = False
                     success_time = time.time()
                     send_button.config(bg=BUTTON_SUCCESS_COLOR)
-                    button_reset_after = time.time() + 2  # Reset to default after 2 seconds
+                    button_reset_after = time.time() + 2
                 
                 data_map = {
                     "Timestamp": parts[0],
@@ -368,9 +182,7 @@ def update_gui():
                     csv_writer.writerow([data_map[key] for key in labels_text[:-1]])
                     csv_file.flush()
                 
-                # Send data to WebSocket clients if the feature is enabled
                 if ENABLE_MAP and websocket_loop:
-                    # Create a simplified data structure for the map visualization
                     websocket_data = {
                         "timestamp": float(parts[0]),
                         "altitude": float(parts[2]),
@@ -382,7 +194,6 @@ def update_gui():
                         "distance": ground_distance.replace(" m", "")
                     }
                     
-                    # Use asyncio to schedule the broadcast in the WebSocket event loop
                     asyncio.run_coroutine_threadsafe(
                         broadcast_telemetry(websocket_data), 
                         websocket_loop
@@ -390,13 +201,11 @@ def update_gui():
     except Exception as e:
         print("Error reading serial:", e)
     
-    # Force update more frequently in test mode to catch command confirmation
     if TEST_MODE:
-        root.after(50, update_gui)  # Update more frequently in test mode
+        root.after(50, update_gui)
     else:
-        root.after(GUI_REFRESH_RATE, update_gui)  # Schedule the next update
+        root.after(GUI_REFRESH_RATE, update_gui)
 
-# =================== Command Sender Functions ===================
 def repeat_send(i, command):
     """Recursively sends the command at intervals defined by COMMAND_SEND_DELAY."""
     global telemetry_paused
@@ -415,11 +224,9 @@ def repeat_send(i, command):
         
         # This ensures the last command sent will be properly detected in test mode
         if TEST_MODE:
-            # Force a refresh of the GUI to immediately show command status
             update_gui()
 
 def send_command():
-    """Initiates the command send sequence by extracting command text."""
     global telemetry_paused, command_sent_time, waiting_for_confirmation
     command = command_entry.get().strip()
     if command:
@@ -436,16 +243,14 @@ def send_command():
         repeat_send(0, command)
 
 # =================== Command Sender Window ===================
-# Create a secondary window for entering and sending commands
 cmd_window = tk.Toplevel(root)
 cmd_window.title("Command Sender")
-cmd_window.attributes("-topmost", True)  # Ensure the command sender window remains above others
+cmd_window.attributes("-topmost", True)
 tk.Label(cmd_window, text="Enter Command:", font=("Arial", 12)).grid(row=0, column=0, padx=5, pady=5)
 command_entry = tk.Entry(cmd_window, font=("Arial", 12), width=40)
 command_entry.grid(row=0, column=1, padx=5, pady=5)
 send_button = tk.Button(cmd_window, text="SEND", font=("Arial", 12), command=send_command)
 send_button.grid(row=1, column=0, columnspan=2, padx=5, pady=5)
-# Bind the Enter key to trigger send_command() for convenience
 command_entry.bind("<Return>", lambda event: send_command())
 
 # =================== Start WebSocket Server ===================
@@ -453,21 +258,14 @@ if ENABLE_MAP:
     # Create a thread for the WebSocket server
     def run_websocket_server():
         global websocket_loop
-        websocket_loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(websocket_loop)
-        server = websockets.serve(websocket_handler, "localhost", WEBSOCKET_PORT)
-        websocket_loop.run_until_complete(server)
-        print(f"WebSocket server started on ws://localhost:{WEBSOCKET_PORT}")
+        websocket_loop = start_websocket_server(WEBSOCKET_PORT)
         websocket_loop.run_forever()
 
-    # Start the WebSocket server in a separate thread
     websocket_thread = threading.Thread(target=run_websocket_server, daemon=True)
     websocket_thread.start()
 
 # =================== Application Main Loop ===================
-# Function to handle clean exit
 def on_closing():
-    """Clean up resources when the app is closed."""
     if SAVE_TO_FILE and 'csv_file' in globals():
         print("Closing CSV file...")
         csv_file.close()
@@ -481,14 +279,9 @@ def handle_interrupt(sig, frame):
 
 # Register signal handlers for clean exit
 signal.signal(signal.SIGINT, handle_interrupt)
-
-# Register window close event
 root.protocol("WM_DELETE_WINDOW", on_closing)
-
-# Start the telemetry update loop and run the GUI
 update_gui()
 root.mainloop()
 
-# Additional cleanup in case mainloop exits normally
 if SAVE_TO_FILE and 'csv_file' in globals():
     csv_file.close()
