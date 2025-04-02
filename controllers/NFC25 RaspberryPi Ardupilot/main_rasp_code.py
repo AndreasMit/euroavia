@@ -8,6 +8,7 @@ import threading
 import time
 from pymavlink import mavutil
 import sx126x
+import sys
 
 # ---- MAVLink2 Interface Parameters -----------
 
@@ -18,7 +19,7 @@ MAV_BAUD = 57600           # Baudrate for MAVLink communication
 
 # ---- LoRa Interface Parameters ---------------
 
-LORA_PORT = '/dev/ttyUSB0'  # Serial port for LoRa communication
+LORA_PORT = "/dev/serial/by-id/usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_Controller_0001-if00-port0"
 LORA_FREQ = 868           # Frequency for LoRa communication
 LORA_POWER = 22           # Power for LoRa communication
 LORA_AIR_SPEED = 2400     # Air speed for LoRa communication
@@ -35,7 +36,9 @@ RCV_COMPL_CMD_PERIOD = 3  # Period to consider a command complete [s]
 # ======== NFC25 Autopilot Class ========
 class NFC25Autopilot:
     def __init__(self, mav_port='/dev/serial0', mav_baud=57600, lora_port='/dev/ttyS0', lora_freq=868, lora_power=22, lora_air_speed=2400, lora_addr=0, GROUND_START_PTRN="/*", GROUND_END_PTRN="*/"):
-
+        
+        # If false it terminates execution
+        self.autopilot_alive = True
 
         # MAVLink connection
         self.mav_connection = mavutil.mavlink_connection(mav_port, baud=mav_baud, autoreconnect=True)
@@ -218,6 +221,7 @@ class NFC25Autopilot:
                         last_pause = time.time()  # Reset pause timer
                 except Exception as e:
                     print(f"Error peeking at serial input buffer with error: {e}")
+                    self.cleanAndExit()
 
                 # Send telemetry if no incoming data detected
                 if send_telemetry:
@@ -245,6 +249,7 @@ class NFC25Autopilot:
                             self.lora_lock.release()
             except Exception as e:
                 print(f"LoRa transmission error: {e}")
+                self.cleanAndExit()
 
             # Calculate remaining time in this cycle
             elapsed = time.time() - start_time
@@ -264,6 +269,7 @@ class NFC25Autopilot:
                         has_data = True
                 except Exception:
                     print(f"Error peeking at serial input buffer with error: {e}")
+                    self.cleanAndExit()
                 
                 # Only try to acquire the lock if there's actually data to read
                 if has_data and self.lora_lock.acquire(blocking=True, timeout=0.5):
@@ -285,6 +291,7 @@ class NFC25Autopilot:
                     
             except Exception as e:
                 print(f"LoRa command reception error: {e}")
+                self.cleanAndExit()
             
             # Shorter sleep when no data was available
             if not has_data:
@@ -343,9 +350,42 @@ class NFC25Autopilot:
         # TODO: Process the command (implement command handling here)
         print(f"ARDUPILOT: Received complete command: {command}\n")
 
+    # Function to cleanup and terminate everything
+    def cleanAndExit(self):
+        print("Cleaning up and exiting...")
+        
+        # Close MAVLink connection if it exists
+        if hasattr(self, 'mav_connection') and self.mav_connection is not None:
+            try:
+                self.mav_connection.close()
+                print("MAVLink connection closed")
+            except Exception as e:
+                print(f"Error closing MAVLink connection: {e}")
+        
+        # Close LoRa connection if it exists
+        if hasattr(self, 'lora_node') and self.lora_node is not None:
+            try:
+                self.lora_node.close()
+                print("LoRa connection closed")
+            except Exception as e:
+                print(f"Error closing LoRa connection: {e}")
+    
+        # Close also thread 1 read mavlink data
+        if hasattr(self, 'mavlink_thread') and self.mavlink_thread is not None:
+            self.mavlink_thread.join(timeout=1)
+            print("MAVLink thread closed")
+
+        # Set flag to terminate main loop process
+        self.autopilot_alive = False
+
+        # Exit
+        print("Cleanup complete, exiting...")
+        sys.exit(0)
+
+
     # ======== Main Control Loop ========
     def run(self):
-        while True:
+        while self.autopilot_alive:
             # print(f"Altitude: {self.telem_data['altitude']:.2f}, Angle of attack: {self.telem_data['angle_of_attack']:.2f}, G: {self.telem_data['g_force']:.2f}, Bat: {self.telem_data['bat_voltage']:.2f}V, {self.telem_data['bat_current']:.2f}A")
             time.sleep(1)  # 50 Hz update rate
 
